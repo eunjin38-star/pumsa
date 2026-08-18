@@ -1419,8 +1419,8 @@
       #spiderQuizFeedback.correct strong{color:#9ff0ae}
       #spiderQuizFeedback.correct span{color:#79dfdf}
       #spiderQuizFeedback.wrong{color:#ff8d85}
-      #spiderHintView{display:none;position:absolute;inset:0;z-index:620;background:#000}
-      #spiderHintView .scene-img{width:100%;height:100%;object-fit:contain}
+      #spiderHintView,#paintingHintView{display:none;position:absolute;inset:0;z-index:620;background:#000}
+      #spiderHintView .scene-img,#paintingHintView .scene-img{width:100%;height:100%;object-fit:contain}
       /* 전체 방의 왼쪽 벽 아래에 직접 놓이는 작은 거미 */
       #spiderMagnifierTarget{left:65.3%;top:64.6%;width:3%;height:6.2%;z-index:30;overflow:visible}
       #spiderMagnifierTarget::before{content:"🕷";position:absolute;inset:0;display:grid;place-items:center;color:#211811;font-size:clamp(10px,1.12vw,17px);opacity:.68;filter:brightness(1.08) contrast(1.18);transform:rotate(-12deg);pointer-events:none}
@@ -1581,7 +1581,7 @@
               </div>
             </div>
             <p id="paintingQuizFeedback"></p>
-            <p id="paintingCodeHint">액자 속 나무만 여러 개 있네?</p>
+            <p id="paintingCodeHint">액자 속 그림에서 나무 빼고 다 하나씩 있네.</p>
           </div>
         </section>
         <section id="mirrorScene" class="scene">
@@ -2108,6 +2108,10 @@
           <img src="spider.png" class="scene-img" alt="확대된 거미 사진">
           <button type="button" class="back-btn" onclick="closeSpiderHintPhoto()">거미 사진 닫기</button>
         </div>
+        <div id="paintingHintView">
+          <img src="frame.png" class="scene-img" alt="나무의 개수를 확인할 수 있는 액자 전체 사진">
+          <button type="button" class="back-btn" onclick="closePaintingHintPhoto()">액자 사진 닫기</button>
+        </div>
         <div
           id="scareOverlay"
           class="scare-overlay"
@@ -2298,6 +2302,7 @@
         document.getElementById("paintingQuizPanel")?.classList.remove("show");
         closeFlashlightView();
         document.getElementById("spiderHintView").style.display = "none";
+        document.getElementById("paintingHintView").style.display = "none";
       }
       function selectArea(name) {
         showDialog(`${name}을(를) 살펴본다.`);
@@ -2360,7 +2365,7 @@
           return;
         }
         game.flags.paintingQuizSolved = true;
-        addHint("액자 속 나무만 여러 개 있네?");
+        addHint("액자 속 그림에서 나무 빼고 다 하나씩 있네.");
         updatePaintingQuizUI();
         showDialog("관형사와 관련된 단서를 찾았다.");
       }
@@ -3313,6 +3318,7 @@
         const bookHintText =
           "두 문제를 모두 해결했다. 153쪽 7번째 줄에서 사용된 조사의 개수를 기억하자.";
         const spiderHintText = "X의 고유 번호는 거미 등의 식과 관련된 거 같아.";
+        const paintingHintText = "액자 속 그림에서 나무 빼고 다 하나씩 있네.";
         const hiddenWallHintText = "‘들어간다’의 고유 번호는 문장 속에 있다.";
         const ceilingHintText =
           "기이한 소리: 야, 어머나, 이런, 안녕, 안녕, 안녕, 하하하, 앗… — 기이한 음성 속에서 한가지 품사로만 말하고 있군.";
@@ -3362,6 +3368,17 @@
                   </div>`
                 : "";
 
+            const paintingControl =
+              hint === paintingHintText
+                ? `<div class="book-hint-record">
+                    <button
+                      type="button"
+                      class="memo-view-btn"
+                      onclick="openPaintingHintPhoto()"
+                    >액자 사진 보기</button>
+                  </div>`
+                : "";
+
             const hiddenWallControl =
               hint === hiddenWallHintText
                 ? `<div class="book-hint-record">
@@ -3385,6 +3402,7 @@
               ${memoControl}
               ${sentenceControl}
               ${spiderControl}
+              ${paintingControl}
               ${hiddenWallControl}
             </div>`;
           })
@@ -3418,6 +3436,16 @@
 
       function closeSpiderHintPhoto() {
         document.getElementById("spiderHintView").style.display = "none";
+        document.getElementById("hintPopup").style.display = "block";
+      }
+
+      function openPaintingHintPhoto() {
+        document.getElementById("hintPopup").style.display = "none";
+        document.getElementById("paintingHintView").style.display = "block";
+      }
+
+      function closePaintingHintPhoto() {
+        document.getElementById("paintingHintView").style.display = "none";
         document.getElementById("hintPopup").style.display = "block";
       }
 
