@@ -1554,7 +1554,7 @@
         </section>
         <section id="paintingScene" class="scene">
           <img id="paintingSceneImg" src="frame.png" class="scene-img" alt="숲과 붉은 지붕의 집이 그려진 액자">
-          <button type="button" class="back-btn" onclick="openScene('roomScene')">← 돌아가기</button>
+          <button type="button" class="back-btn" onclick="handlePaintingBack()">← 돌아가기</button>
           <div id="paintingMagnifierTarget" aria-label="액자 오른쪽 위의 작은 글씨"></div>
           <button type="button" id="paintingProblemBtn" class="problem-btn" onclick="showPaintingQuiz()">문제 보기</button>
           <div id="paintingQuizPanel" class="painting-quiz-panel">
@@ -1572,7 +1572,7 @@
             </div>
             <div id="paintingQuestion2">
               <h2>문제 2</h2>
-              <p>문장 중에서 관형사가 사용되지 않은 것은?</p>
+              <p>관형사가 사용된 것은?</p>
               <div class="painting-choices q2">
                 <button type="button" onclick="checkPaintingAnswer2(1)">1. 멋진 너를 좋아해.</button>
                 <button type="button" onclick="checkPaintingAnswer2(2)">2. 큰 사건이 발생했어.</button>
@@ -2332,6 +2332,15 @@
       }
       function closePaintingQuiz() {
         document.getElementById("paintingQuizPanel").classList.remove("show");
+      }
+      function handlePaintingBack() {
+        if (game.flags.paintingMagnified) {
+          closePaintingQuiz();
+          game.flags.paintingMagnified = false;
+          updatePaintingScene();
+          return;
+        }
+        openScene("roomScene");
       }
       function checkPaintingAnswer1(answer) {
         const feedback = document.getElementById("paintingQuizFeedback");
