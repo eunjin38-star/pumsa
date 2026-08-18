@@ -1,0 +1,3938 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <title>품사 방탈출 v3</title>
+    <style>
+      :root {
+        --panel-bg: rgba(15, 13, 11, 0.96);
+        --panel-border: #8b6f43;
+        --text-main: #f4ead8;
+        --hint-color: #8fd8c8;
+      }
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        font-family: "Noto Sans KR", Arial, sans-serif;
+        user-select: none;
+        touch-action: manipulation;
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      .game {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .stage {
+        position: relative;
+        width: min(100vw, 150vh);
+        height: min(100vh, 66.6667vw);
+        overflow: hidden;
+        background: #000;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        display: none;
+      }
+      .scene.active {
+        display: block;
+      }
+      .scene-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+      .hotspot,
+      .book-hotspot {
+        position: absolute;
+        padding: 0;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        z-index: 10;
+      }
+      #ceiling {
+        left: 34%;
+        top: 0;
+        width: 35%;
+        height: 15%;
+      }
+      #leftWall {
+        left: 0;
+        top: 10%;
+        width: 28%;
+        height: 36%;
+      }
+      #leftDrawer {
+        left: 0;
+        top: 55%;
+        width: 24%;
+        height: 36%;
+      }
+      #painting {
+        left: 27%;
+        top: 18%;
+        width: 9.5%;
+        height: 25%;
+      }
+      #paintingScene{background:#000;overflow:hidden}
+      #paintingScene .scene-img{object-fit:contain}
+      #paintingMagnifierTarget{position:absolute;right:6%;top:12%;width:18%;height:18%;z-index:45;border:0;background:transparent;pointer-events:none}
+      #paintingProblemBtn{display:none;left:calc(2% + 150px);top:3%;bottom:auto;transform:none;width:155px;padding:12px}
+      .painting-quiz-panel{display:none;position:absolute;left:18%;bottom:3%;z-index:220;width:min(760px,64%);padding:16px 20px;border:2px solid #4e8ecb;border-radius:15px;background:rgba(5,10,22,.96);color:#eaf5ff;box-shadow:0 18px 45px rgba(0,0,0,.88)}
+      .painting-quiz-panel.show{display:block}
+      .painting-quiz-panel h2{margin:0 42px 9px 0;color:#8fd8ff;font-size:22px}
+      .painting-quiz-panel p{margin:7px 0;font-size:17px;line-height:1.4}
+      .painting-choices{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:10px}
+      .painting-choices.q2{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .painting-choices button{min-height:42px;padding:7px 8px;border:1px solid #5598d3;border-radius:8px;background:#183552;color:#eef8ff;font-size:16px;font-weight:700;cursor:pointer}
+      .painting-choices button:disabled{opacity:.58;cursor:default}
+      .painting-quiz-close{position:absolute;right:12px;top:8px;border:0;background:transparent;color:#eef5ff;font-size:30px;cursor:pointer}
+      #paintingQuestion2{display:none}
+      #paintingQuizFeedback{min-height:1.5em;margin-top:9px;color:#ff918a;font-weight:800}
+      #paintingCodeHint{display:none;margin-top:11px;color:#62b9ff;font-size:19px;font-weight:900}
+      #desk {
+        left: 34%;
+        top: 38%;
+        width: 27%;
+        height: 36%;
+      }
+      #bookshelf {
+        left: 51%;
+        top: 10%;
+        width: 18%;
+        height: 58%;
+      }
+      #mirror {
+        left: 67%;
+        top: 10%;
+        width: 14%;
+        height: 57%;
+      }
+      #mirrorScene{background:#000;overflow:hidden}
+      #mirrorScene .mirror-layer{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+      #mirrorSentenceImg{opacity:0;transition:opacity 3s ease-in-out;pointer-events:none}
+      #mirrorSentenceImg.revealed{opacity:1}
+      #mirrorProblemBtn{left:calc(2% + 155px);top:3%;bottom:auto;transform:none;width:155px;padding:12px}
+      .mirror-quiz-panel{display:none;position:absolute;left:39%;right:auto;top:1%;bottom:auto;z-index:220;width:min(560px,44%);padding:12px 16px;border:2px solid #7c91ad;border-radius:15px;background:rgba(7,12,20,.95);color:#eef5ff;box-shadow:0 18px 45px rgba(0,0,0,.85)}
+      .mirror-quiz-panel.show{display:block}
+      .mirror-quiz-panel h2{margin:0 42px 5px 0;color:#c5dcf4;font-size:21px}
+      .mirror-quiz-panel p{margin:5px 0;font-size:17px;line-height:1.35}
+      .mirror-answer-row{display:flex;gap:8px;margin-top:7px}
+      .mirror-answer-row input{flex:1;min-width:0;padding:8px 11px;border:2px solid #667f9d;border-radius:9px;background:#05080d;color:#fff;font-size:18px}
+      .mirror-answer-row button,.mirror-hint-btn{padding:8px 13px;border:1px solid #8aa0b8;border-radius:9px;background:#334b66;color:#fff;font-weight:800;cursor:pointer}
+      .mirror-hint-btn{margin-top:7px;background:#4a3e65}
+      .mirror-quiz-close{position:absolute;right:12px;top:8px;border:0;background:transparent;color:#eef5ff;font-size:30px;cursor:pointer}
+      #mirrorInitialHint{display:none;color:#d9c9ff;font-weight:900;letter-spacing:.18em}
+      #mirrorQuizFeedback{min-height:1.25em;margin-top:5px;color:#ff9890;font-weight:800}
+      #mirrorWordQuestion{display:none;margin-top:12px;padding-top:11px;border-top:1px solid rgba(160,190,220,.35)}
+      .mirror-word{display:inline;padding:3px 5px;border:0;border-radius:5px;background:transparent;color:#f2f5f8;font:inherit;font-weight:400;cursor:pointer}
+      .mirror-word.selected{background:#254f79;color:#8ed5ff;font-weight:400}
+      #mirrorCodeHint{display:none;margin-top:11px;color:#62b9ff;font-size:19px;font-weight:900}
+      #door {
+        left: 82%;
+        top: 8%;
+        width: 13%;
+        height: 70%;
+      }
+      #doorScene,#doorNoteScene,#doorDialScene,#doorOpeningScene{background:#000;overflow:hidden}
+      #doorScene .scene-img,#doorNoteScene .scene-img{object-fit:contain}
+      #doorNoteTarget{position:absolute;left:44.5%;top:23.5%;width:11%;height:10%;z-index:45;padding:0;border:0;background:transparent;cursor:pointer}
+      #doorDialTarget{position:absolute;left:40%;top:41%;width:20%;height:16%;z-index:46;padding:0;border:2px solid transparent;background:transparent;cursor:pointer;border-radius:14px}
+      #doorDialTarget:hover,#doorDialTarget:focus-visible{border-color:#d0a35c;box-shadow:0 0 22px rgba(224,166,75,.8);outline:0}
+      .dial-controls{position:absolute;left:25.5%;top:31.5%;width:49%;height:38%;z-index:80;display:flex;align-items:center;justify-content:space-around;padding:0 7%}
+      .dial-wheel-control{position:relative;width:17%;height:54%;display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:none;cursor:grab}
+      .dial-wheel-control:active{cursor:grabbing}
+      .dial-arrow{position:absolute;left:50%;transform:translateX(-50%);width:52px;height:35px;border:1px solid rgba(218,176,108,.72);border-radius:9px;background:rgba(12,9,7,.8);color:#f1c87f;font-size:23px;font-weight:900;cursor:pointer;z-index:3}
+      .dial-arrow.up{top:-43px}.dial-arrow.down{bottom:-43px}
+      .dial-number{display:grid;place-items:center;width:74px;height:92px;border:2px solid #977044;border-radius:10px;background:linear-gradient(#2b241d,#75634e 48%,#352b21);box-shadow:inset 0 8px 15px rgba(255,255,255,.1),inset 0 -10px 16px rgba(0,0,0,.75),0 4px 10px #000;color:#f4e1bd;text-shadow:0 3px 3px #000;font-family:Georgia,serif;font-size:58px;font-weight:900;overflow:hidden}
+      .dial-number.roll-up{animation:dialRollUp .18s ease}.dial-number.roll-down{animation:dialRollDown .18s ease}
+      @keyframes dialRollUp{50%{transform:translateY(-13px) scaleY(.82);filter:blur(2px)}}
+      @keyframes dialRollDown{50%{transform:translateY(13px) scaleY(.82);filter:blur(2px)}}
+      .dial-submit{position:absolute;left:50%;bottom:5%;transform:translateX(-50%);z-index:90;min-width:170px;padding:12px 25px;border:2px solid #b28a50;border-radius:10px;background:#21170e;color:#ffe3a8;font-size:20px;font-weight:900;cursor:pointer;box-shadow:0 5px 18px #000}
+      .dial-feedback{position:absolute;left:50%;top:7%;transform:translateX(-50%);z-index:90;min-width:290px;padding:10px 18px;border-radius:10px;background:rgba(0,0,0,.82);color:#ff9b91;text-align:center;font-size:19px;font-weight:900;opacity:0;transition:opacity .2s}
+      .dial-feedback.show{opacity:1}.dial-feedback.correct{color:#aaffbd}
+      #doorOpeningScene{perspective:1600px;background:#000}
+      .opening-door{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:22% 50%;animation:doorSwing 2.2s cubic-bezier(.65,0,.3,1) forwards;filter:brightness(.9)}
+      #doorOpeningScene::before{content:"";position:absolute;left:33.3%;top:0;width:33.4%;height:100%;background:#fff;box-shadow:0 0 90px 35px #fff;opacity:0;animation:lightReveal 2.2s ease forwards}
+      @keyframes doorSwing{0%{transform:perspective(1400px) rotateY(0);opacity:1}75%{transform:perspective(1400px) rotateY(-78deg);opacity:.7}100%{transform:perspective(1400px) rotateY(-88deg);opacity:0}}
+      @keyframes lightReveal{0%,20%{opacity:0}100%{opacity:1}}
+      #escapeSuccess{position:absolute;inset:0;z-index:500;display:none;place-items:center;background:#fff;color:#161616;text-align:center;opacity:0;transition:opacity .75s}
+      #escapeSuccess.show{display:grid;opacity:1}
+      .escape-card h1{margin:0 0 18px;font-size:clamp(42px,7vw,92px);letter-spacing:.08em}.escape-card p{margin:8px;font-size:clamp(20px,2.5vw,34px)}
+      .escape-time{color:#2367a7;font-weight:900;font-size:clamp(30px,4vw,54px)!important}
+      #memoHotspot {
+        left: 60%;
+        top: 30%;
+        width: 24%;
+        height: 20%;
+      }
+      #bookMemoHotspot {
+        left: 37%;
+        top: 21%;
+        width: 13%;
+        height: 12%;
+        z-index: 12;
+      }
+      #leftTopDrawerHotspot {
+        left: 7%;
+        top: 40%;
+        width: 19%;
+        height: 15%;
+      }
+      #deskKeyholeHotspot {
+        left: 43%;
+        top: 40%;
+        width: 18%;
+        height: 16%;
+        z-index: 12;
+      }
+      #keyHotspot {
+        left: 24%;
+        top: 42%;
+        width: 19%;
+        height: 16%;
+        display: none;
+      }
+      #flashlightHotspot {
+        left: 32%;
+        top: 30%;
+        width: 36%;
+        height: 28%;
+      }
+      .back-btn {
+        position: absolute;
+        left: 2%;
+        top: 3%;
+        z-index: 120;
+        padding: 12px 20px;
+        border-radius: 12px;
+        border: 2px solid rgba(210, 190, 145, 0.45);
+        background: rgba(18, 15, 12, 0.92);
+        color: var(--text-main);
+        font-size: 18px;
+        cursor: pointer;
+      }
+      .corner-btn {
+        position: absolute;
+        bottom: 3%;
+        width: 110px;
+        height: 110px;
+        border-radius: 16px;
+        background: rgba(18, 15, 12, 0.9);
+        border: 2px solid rgba(210, 190, 145, 0.35);
+        color: var(--text-main);
+        box-shadow: 0 0 18px rgba(0, 0, 0, 0.8);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        font-size: 18px;
+        z-index: 40;
+        cursor: pointer;
+      }
+      #inventoryBtn {
+        left: 2%;
+      }
+      #hintBtn {
+        right: 2%;
+      }
+      .icon {
+        font-size: 40px;
+      }
+      .popup {
+        display: none;
+        position: absolute;
+        bottom: 17%;
+        width: 360px;
+        min-height: 260px;
+        padding: 20px;
+        border-radius: 16px;
+        z-index: 200;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      }
+      #inventoryPopup {
+        left: 2%;
+        background: var(--panel-bg);
+        border: 2px solid var(--panel-border);
+        color: #f4ead7;
+      }
+      #hintPopup {
+        right: 2%;
+        width: 420px;
+        min-height: 500px;
+        max-height: 76%;
+        padding: 52px 44px 42px;
+        overflow-y: auto;
+        background:
+          linear-gradient(rgba(255, 239, 197, 0.08), rgba(85, 43, 12, 0.05)),
+          url("hintnote.png") center / 100% 100% no-repeat;
+        border: 2px solid rgba(75, 38, 13, 0.82);
+        border-radius: 18px;
+        color: #2d1608;
+        box-shadow:
+          0 0 32px rgba(0, 0, 0, 0.92),
+          inset 0 0 24px rgba(72, 32, 8, 0.28);
+        font-family:
+          "Nanum Pen Script", "Nanum Brush Script", "Cafe24 Oneprettynight",
+          "UhBee Se_hyun", "Segoe Print", "Bradley Hand", "Comic Sans MS",
+          cursive;
+        font-size: 21px;
+        font-weight: 600;
+        line-height: 1.55;
+        letter-spacing: 0.015em;
+      }
+
+      #hintPopup h2 {
+        margin: 0 34px 20px 0;
+        color: #351707;
+        font-family: inherit;
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        text-shadow: 0 1px 0 rgba(255, 224, 165, 0.45);
+      }
+
+      #hintPopup .close {
+        top: 24px;
+        right: 28px;
+        color: #341707;
+        font-family: Arial, sans-serif;
+        font-size: 34px;
+        font-weight: 500;
+      }
+
+      #hintText {
+        padding-bottom: 4px;
+      }
+
+      .hint-record {
+        margin: 0 0 17px;
+        padding: 0 0 16px;
+        border-bottom: 1px solid rgba(76, 39, 15, 0.3);
+      }
+
+      .hint-record-main {
+        display: flex;
+        align-items: flex-start;
+        gap: 11px;
+      }
+
+      .hint-record-main p {
+        flex: 1;
+        margin: -2px 0 0;
+        color: #351707 !important;
+      }
+
+      .hint-record-main .hint-inline-btn {
+        flex: 0 0 auto;
+        align-self: center;
+        margin: -1px 0 0 6px;
+        padding: 7px 10px;
+        white-space: nowrap;
+        font-size: 15px;
+        line-height: 1.2;
+      }
+
+      .hint-number {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 27px;
+        height: 27px;
+        margin-top: 2px;
+        border: 2px solid rgba(79, 39, 12, 0.78);
+        border-radius: 50%;
+        background: rgba(239, 194, 116, 0.25);
+        color: #351707;
+        font-family: inherit;
+        font-size: 17px;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      #hintPopup .memo-view-btn {
+        margin-left: 0;
+        border: 1px solid rgba(65, 31, 9, 0.72);
+        background: rgba(91, 48, 17, 0.83);
+        color: #fff1cf;
+        font-family: inherit;
+        font-size: 20px;
+        font-weight: 700;
+        box-shadow: 0 2px 5px rgba(48, 20, 5, 0.28);
+      }
+
+      #hintPopup .memo-view-btn:hover {
+        background: rgba(111, 60, 21, 0.92);
+      }
+      .close {
+        position: absolute;
+        top: 8px;
+        right: 14px;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font-size: 30px;
+        cursor: pointer;
+      }
+      .inventory-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+      .slot {
+        height: 64px;
+        border: 2px dashed rgba(230, 220, 190, 0.45);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #b9a98c;
+        font-size: 14px;
+      }
+      .slot.has-item {
+        color: #f4ead7;
+        font-size: 28px;
+      }
+      .inventory-item {
+        cursor: grab;
+        font-size: 30px;
+        touch-action: none;
+      }
+      .torn-note-icon {
+        width: 46px;
+        height: 39px;
+        background: linear-gradient(145deg, #c6a56c, #a9854e);
+        color: #2b1b10;
+        font-size: 9px;
+        line-height: 1.15;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        transform: rotate(-9deg);
+        clip-path: polygon(7% 8%, 95% 0%, 88% 72%, 65% 100%, 12% 87%, 0 34%);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.55);
+      }
+      .dialog {
+        display: none;
+        position: absolute;
+        left: 50%;
+        bottom: 8%;
+        transform: translateX(-50%);
+        width: 70%;
+        padding: 18px 24px;
+        background: rgba(12, 10, 8, 0.95);
+        border: 2px solid rgba(210, 190, 145, 0.55);
+        color: var(--text-main);
+        font-size: 22px;
+        line-height: 1.5;
+        border-radius: 14px;
+        z-index: 400;
+        text-align: center;
+        pointer-events: none;
+      }
+      .dialog.blue-hint{color:#62b9ff;border-color:#4e9fe0;box-shadow:0 0 22px rgba(54,153,235,.38);font-weight:900}
+      .blue-hint-text{color:#62b9ff;font-weight:900}
+      #ceilingScene{background:#000;overflow:hidden}
+      #ceilingScene .scene-img{object-fit:contain}
+      #ceilingVoiceProblemBtn{display:none;position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:430;width:290px;padding:17px 20px;border:2px solid #78b9eb;border-radius:13px;background:rgba(10,20,34,.96);color:#eaf6ff;font-size:23px;font-weight:900;cursor:pointer;box-shadow:0 0 28px rgba(72,169,238,.58)}
+      #ceilingVoiceQuiz{display:none;position:absolute;inset:0;z-index:440;align-items:center;justify-content:center;background:rgba(0,0,0,.72)}
+      #ceilingVoiceQuiz.show{display:flex}
+      .ceiling-voice-card{position:relative;width:min(720px,78%);padding:28px 30px;border:2px solid #78b9eb;border-radius:17px;background:rgba(7,15,27,.98);color:#eff8ff;box-shadow:0 20px 55px rgba(0,0,0,.85)}
+      .ceiling-voice-card h2{margin:0 45px 14px 0;color:#8ed4ff;font-size:27px}
+      .ceiling-voice-card p{margin:8px 0 18px;font-size:22px;font-weight:800}
+      .ceiling-voice-choices{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+      .ceiling-voice-choices button{min-height:54px;border:1px solid #659bc2;border-radius:10px;background:#233e59;color:#f4f9ff;font-size:19px;font-weight:900;cursor:pointer}
+      .ceiling-voice-transcript{padding:18px;border:1px solid rgba(126,197,244,.55);border-radius:12px;background:rgba(16,35,54,.78);color:#dff3ff;line-height:1.75!important;text-align:center}
+      .ceiling-voice-next{display:block;margin:18px auto 0;min-width:180px;padding:12px 22px;border:1px solid #75acd2;border-radius:10px;background:#294d6d;color:#fff;font-size:19px;font-weight:900;cursor:pointer}
+      .ceiling-voice-close{position:absolute;right:14px;top:10px;border:0;background:transparent;color:#fff;font-size:32px;cursor:pointer}
+      #ceilingVoiceFeedback{min-height:1.5em;margin:14px 0 0;color:#ff9b93;font-size:18px;font-weight:900}
+      .image-modal {
+        display: none;
+        position: absolute;
+        inset: 0;
+        z-index: 150;
+        background: rgba(0, 0, 0, 0.97);
+      }
+      .memo-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+      .memo-top-bar {
+        position: absolute;
+        top: 3%;
+        left: 2%;
+        display: flex;
+        align-items: flex-start;
+        gap: 18px;
+        z-index: 190;
+      }
+      .memo-top-bar .back-btn {
+        position: static;
+      }
+      .problem-btn {
+        position: absolute;
+        left: 50%;
+        bottom: 5%;
+        transform: translateX(-50%);
+        width: 260px;
+        padding: 14px;
+        border-radius: 10px;
+        border: 2px solid #9a7b4b;
+        background: rgba(20, 16, 12, 0.94);
+        color: #fff3dd;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 180;
+      }
+      .inline-question {
+        display: none;
+        width: 520px;
+        min-height: 92px;
+        padding: 16px 20px;
+        border-radius: 14px;
+        background: rgba(20, 16, 12, 0.95);
+        border: 2px solid #9a7b4b;
+        color: var(--text-main);
+        font-size: 18px;
+        text-align: left;
+      }
+      .inline-question p {
+        margin: 4px 0;
+      }
+      .inline-question input {
+        width: 260px;
+        padding: 10px;
+        margin-top: 10px;
+        font-size: 18px;
+        border-radius: 8px;
+        border: 2px solid #8b6f43;
+      }
+      .inline-question button,
+      .memo-view-btn {
+        padding: 10px 18px;
+        margin-left: 8px;
+        font-size: 17px;
+        border-radius: 8px;
+        border: 0;
+        background: #7b5930;
+        color: #fff3dd;
+        cursor: pointer;
+      }
+      .action-hint {
+        color: var(--hint-color);
+        font-weight: 800;
+      }
+      .book-hint-record {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(90, 58, 34, 0.35);
+      }
+      .book-hint-record .memo-view-btn {
+        margin: 0;
+      }
+      .book-hint-sentence {
+        margin: 10px 0 0;
+        padding: 12px 14px;
+        border: 2px solid rgba(90, 58, 34, 0.45);
+        border-radius: 10px;
+        background: rgba(255, 248, 224, 0.65);
+        color: #24160d;
+        font-size: 17px;
+        font-weight: 800;
+        line-height: 1.55;
+      }
+      .pronoun-word {
+        display: none;
+        position: absolute;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        z-index: 175;
+      }
+      #wordHe {
+        left: 35%;
+        top: 28%;
+        width: 8%;
+        height: 7%;
+      }
+      #wordWe {
+        left: 44%;
+        top: 30%;
+        width: 9%;
+        height: 7%;
+      }
+      #wordMy {
+        left: 33%;
+        top: 35%;
+        width: 8%;
+        height: 7%;
+      }
+      #wordThese {
+        left: 57%;
+        top: 38%;
+        width: 14%;
+        height: 7%;
+      }
+      #wordThat {
+        left: 35%;
+        top: 40%;
+        width: 14%;
+        height: 7%;
+      }
+      .drag-ghost {
+        position: fixed;
+        z-index: 999;
+        pointer-events: none;
+        font-size: 42px;
+        transform: translate(-50%, -50%);
+      }
+      .portrait-wrap {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        height: 100%;
+        aspect-ratio: 2/3;
+        transform: translateX(-50%);
+      }
+      .portrait-wrap > img {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .portrait-wrap .book-hotspot {
+        z-index: 15;
+      }
+      #bookKorean {
+        left: 5.5%;
+        top: 7.5%;
+        width: 17.5%;
+        height: 31%;
+      }
+      #bookAnimal {
+        left: 23.5%;
+        top: 7.5%;
+        width: 17%;
+        height: 31%;
+      }
+      #book1984 {
+        left: 41%;
+        top: 7.5%;
+        width: 16%;
+        height: 31%;
+      }
+      #bookDemian {
+        left: 57.5%;
+        top: 7.5%;
+        width: 16%;
+        height: 31%;
+      }
+      #bookPrince {
+        left: 74%;
+        top: 7.5%;
+        width: 18%;
+        height: 31%;
+      }
+      #bookThreeKingdoms {
+        left: 6%;
+        top: 43%;
+        width: 20%;
+        height: 28%;
+      }
+      #bookSherlock {
+        left: 27%;
+        top: 43%;
+        width: 19%;
+        height: 28%;
+      }
+      #bookMockingbird {
+        left: 48%;
+        top: 43%;
+        width: 20%;
+        height: 28%;
+      }
+      #bookPride {
+        left: 69%;
+        top: 43%;
+        width: 19%;
+        height: 28%;
+      }
+      #bookLesMis {
+        left: 15%;
+        top: 75%;
+        width: 47%;
+        height: 7.5%;
+      }
+      #bookGatsby {
+        left: 15%;
+        top: 83%;
+        width: 50%;
+        height: 7%;
+      }
+      #bookCatcher {
+        left: 15%;
+        top: 90%;
+        width: 52%;
+        height: 7%;
+      }
+      #bookPotter {
+        left: 68%;
+        top: 76%;
+        width: 20%;
+        height: 20%;
+        transform: rotate(-13deg);
+      }
+      .scare-overlay {
+        display: none;
+        position: absolute;
+        inset: 0;
+        z-index: 500;
+        background: rgba(0, 0, 0, 0.84);
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        cursor: pointer;
+      }
+      .scare-overlay.show {
+        display: flex;
+      }
+      .effect-symbol {
+        font-size: clamp(88px, 12vw, 170px);
+        line-height: 1;
+        opacity: 0;
+        transform: scale(0.75);
+        filter: drop-shadow(0 0 18px rgba(232, 205, 148, 0.35));
+      }
+      .scare-overlay.show .effect-symbol {
+        animation: mildAppear 0.36s ease forwards;
+      }
+      #scareText {
+        margin-top: 22px;
+        padding: 0 24px;
+        color: #eee2cb;
+        font-size: 24px;
+        text-align: center;
+      }
+      @keyframes mildAppear {
+        from {
+          opacity: 0;
+          transform: scale(0.75);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      .light-flash {
+        animation: lightFlash 0.45s linear;
+      }
+      @keyframes lightFlash {
+        0% {
+          filter: brightness(1);
+        }
+        25% {
+          filter: brightness(0.25);
+        }
+        50% {
+          filter: brightness(1.35);
+        }
+        75% {
+          filter: brightness(0.4);
+        }
+        100% {
+          filter: brightness(1);
+        }
+      }
+      @media (max-width: 900px) {
+        .corner-btn {
+          width: 90px;
+          height: 90px;
+          font-size: 15px;
+        }
+        .icon {
+          font-size: 32px;
+        }
+        .popup {
+          width: 310px;
+          min-height: 230px;
+        }
+        #hintPopup {
+          width: min(390px, 72vw);
+          min-height: 420px;
+          max-height: 74%;
+          padding: 46px 34px 34px;
+          font-size: 18px;
+        }
+        #hintPopup h2 {
+          font-size: 29px;
+        }
+        #hintPopup .memo-view-btn {
+          font-size: 17px;
+        }
+        .slot {
+          height: 55px;
+        }
+        .back-btn {
+          font-size: 15px;
+          padding: 10px 16px;
+        }
+        .dialog {
+          font-size: 18px;
+        }
+        .inline-question {
+          width: min(480px, 65vw);
+          font-size: 16px;
+        }
+        .inline-question input {
+          width: 220px;
+        }
+      }
+
+      /* index.html 안에 직접 통합한 책 화면 */
+      #bookScene {
+        overflow: hidden;
+        background: #050504;
+      }
+
+      #embeddedBookViewport {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        font-family: "Noto Serif KR", "Nanum Myeongjo", "Batang", serif;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      #embeddedBook {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1448px;
+        height: 1086px;
+        transform-origin: 0 0;
+        overflow: hidden;
+        border-radius: 34px;
+        background:
+          radial-gradient(
+            ellipse at center,
+            rgba(74, 46, 23, 0.42) 0%,
+            rgba(24, 15, 9, 0.86) 67%,
+            #080604 100%
+          ),
+          linear-gradient(135deg, #26180e, #0c0805 55%, #2d1c10);
+        box-shadow:
+          inset 0 0 0 3px rgba(126, 83, 42, 0.25),
+          inset 0 0 70px rgba(0, 0, 0, 0.82),
+          0 18px 30px rgba(0, 0, 0, 0.65);
+      }
+
+      /* 이미지에 인쇄된 기존 글자가 비치지 않도록 책 바탕을 CSS로 새로 그림 */
+      #embeddedBook::before {
+        content: "";
+        position: absolute;
+        z-index: 0;
+        left: 174px;
+        top: 112px;
+        width: 1100px;
+        height: 874px;
+        border-radius: 28px 28px 22px 22px;
+        background:
+          linear-gradient(
+            90deg,
+            #d4b57e 0%,
+            #efd7aa 4%,
+            #fae9c8 44.5%,
+            #dfc18f 48.4%,
+            #79502b 49.5%,
+            #3d2414 50%,
+            #79502b 50.5%,
+            #dfc18f 51.6%,
+            #fae9c8 55.5%,
+            #efd7aa 96%,
+            #d4b57e 100%
+          );
+        box-shadow:
+          0 14px 24px rgba(0, 0, 0, 0.58),
+          inset 18px 0 24px rgba(91, 52, 22, 0.18),
+          inset -18px 0 24px rgba(91, 52, 22, 0.18),
+          inset 0 0 0 2px rgba(109, 70, 32, 0.28);
+        pointer-events: none;
+      }
+
+      #embeddedBook::after {
+        content: "";
+        position: absolute;
+        z-index: 0;
+        left: 714px;
+        top: 126px;
+        width: 20px;
+        height: 846px;
+        border-radius: 50%;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(47, 26, 13, 0.78) 0%,
+          rgba(90, 53, 27, 0.34) 48%,
+          transparent 76%
+        );
+        filter: blur(2px);
+        pointer-events: none;
+      }
+
+      .embedded-book-page {
+        position: absolute;
+        z-index: 1;
+        top: 145px;
+        width: 470px;
+        height: 800px;
+        overflow: hidden;
+        color: #090603;
+        background: linear-gradient(
+          90deg,
+          rgba(225, 199, 153, 0.96),
+          rgba(248, 231, 196, 0.97)
+        );
+        border: 1px solid rgba(99, 61, 27, 0.22);
+        border-radius: 12px;
+        box-shadow:
+          inset 0 0 28px rgba(104, 65, 29, 0.16),
+          0 1px 3px rgba(0, 0, 0, 0.18);
+        font-family:
+          "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", system-ui,
+          sans-serif;
+        font-size: 18pt;
+        font-weight: 800;
+        line-height: 1.34;
+        letter-spacing: -0.035em;
+        text-shadow:
+          0 1px 0 rgba(255, 255, 255, 0.8),
+          0 0 1px rgba(255, 255, 255, 0.38),
+          0 1px 1px rgba(0, 0, 0, 0.2);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+        transition:
+          opacity 0.18s ease,
+          transform 0.28s ease,
+          filter 0.28s ease;
+        transform-style: preserve-3d;
+      }
+
+      .embedded-book-page.left {
+        left: 220px;
+        padding: 20px 28px 72px 18px;
+        border-radius: 18px 6px 6px 14px;
+        background: linear-gradient(
+          90deg,
+          rgba(222, 194, 147, 0.96),
+          rgba(248, 231, 196, 0.98)
+        );
+        transform-origin: right center;
+      }
+
+      .embedded-book-page.right {
+        left: 758px;
+        padding: 20px 18px 72px 28px;
+        border-radius: 6px 18px 14px 6px;
+        background: linear-gradient(
+          90deg,
+          rgba(248, 231, 196, 0.98),
+          rgba(222, 194, 147, 0.96)
+        );
+        transform-origin: left center;
+      }
+
+      .embedded-book-page .line {
+        min-height: 1.34em;
+        margin: 0;
+        white-space: normal;
+        word-break: normal;
+        overflow-wrap: anywhere;
+      }
+
+      .embedded-book-page-number {
+        position: absolute;
+        left: 50%;
+        bottom: 8px;
+        transform: translateX(-50%);
+        min-width: 78px;
+        padding: 3px 12px 4px;
+        border-radius: 14px;
+        color: #120b06;
+        background: rgba(246, 229, 195, 0.42);
+        font-family:
+          "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+        font-size: 19pt;
+        font-weight: 900;
+        line-height: 1.15;
+        letter-spacing: 0.03em;
+        font-variant-numeric: lining-nums tabular-nums;
+        text-align: center;
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+        box-shadow: inset 0 0 0 1px rgba(73, 47, 25, 0.14);
+      }
+
+      #embeddedBook.turn-next .embedded-book-page.left {
+        transform: perspective(900px) rotateY(-7deg) translateX(-10px);
+        opacity: 0.18;
+        filter: blur(1px);
+      }
+
+      #embeddedBook.turn-next .embedded-book-page.right {
+        transform: perspective(900px) rotateY(-16deg) translateX(-16px);
+        opacity: 0.08;
+        filter: blur(1.5px);
+      }
+
+      #embeddedBook.turn-prev .embedded-book-page.left {
+        transform: perspective(900px) rotateY(16deg) translateX(16px);
+        opacity: 0.08;
+        filter: blur(1.5px);
+      }
+
+      #embeddedBook.turn-prev .embedded-book-page.right {
+        transform: perspective(900px) rotateY(7deg) translateX(10px);
+        opacity: 0.18;
+        filter: blur(1px);
+      }
+
+      .embedded-book-nav {
+        position: absolute;
+        z-index: 5;
+        display: grid;
+        place-items: center;
+        width: 68px;
+        height: 68px;
+        border: 1px solid rgba(210, 174, 111, 0.48);
+        border-radius: 50%;
+        background: radial-gradient(
+          circle at 35% 30%,
+          rgba(83, 64, 36, 0.92),
+          rgba(18, 13, 8, 0.95)
+        );
+        color: #d6b77d;
+        font-size: 36px;
+        line-height: 1;
+        cursor: pointer;
+        box-shadow:
+          0 7px 18px rgba(0, 0, 0, 0.55),
+          inset 0 0 10px rgba(235, 198, 125, 0.08);
+        transition:
+          transform 0.16s ease,
+          opacity 0.16s ease,
+          border-color 0.16s ease;
+      }
+
+      .embedded-book-nav:hover:not(:disabled) {
+        transform: scale(1.08);
+        border-color: rgba(242, 206, 137, 0.9);
+      }
+
+      .embedded-book-nav:active:not(:disabled) {
+        transform: scale(0.96);
+      }
+
+      .embedded-book-nav:disabled {
+        opacity: 0.2;
+        cursor: default;
+      }
+
+      #embeddedBookPrev {
+        left: 115px;
+        top: 815px;
+      }
+
+      #embeddedBookNext {
+        right: 115px;
+        top: 815px;
+      }
+
+      .embedded-book-nav span {
+        transform: translateY(-2px);
+      }
+
+      #embeddedBook .line.clickable-hint {
+        cursor: pointer;
+      }
+
+      #embeddedBook .particle-target {
+        color: inherit;
+        font-weight: inherit;
+        border-radius: 4px;
+        padding: 0 0.03em;
+        transition:
+          background 0.18s ease,
+          box-shadow 0.18s ease;
+      }
+
+      #embeddedBook .line.revealed .particle-target {
+        background: linear-gradient(
+          transparent 24%,
+          rgba(112, 255, 0, 0.96) 24%,
+          rgba(75, 255, 35, 0.9) 90%,
+          transparent 90%
+        );
+        box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
+        box-shadow:
+          inset 0 -1px 0 rgba(18, 124, 0, 0.42),
+          0 0 5px rgba(93, 255, 32, 0.4);
+      }
+
+
+      /* 책 내용을 가리지 않는 상단 문제 영역 */
+      .book-top-bar {
+        position: absolute;
+        top: 2%;
+        left: 2%;
+        right: 2%;
+        z-index: 240;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        pointer-events: none;
+      }
+
+      .book-top-bar > * {
+        pointer-events: auto;
+      }
+
+      .book-top-bar .book-back-btn {
+        position: static;
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+
+      .book-quiz-open-btn {
+        flex: 0 0 auto;
+        min-height: 52px;
+        padding: 0 22px;
+        border: 2px solid #9a7b4b;
+        border-radius: 14px;
+        background: rgba(20, 16, 12, 0.97);
+        color: #f3d69c;
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.58);
+        font-size: 17px;
+        font-weight: 900;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+
+      .book-quiz-open-btn:hover {
+        background: rgba(73, 52, 30, 0.98);
+      }
+
+      .book-quiz-open-btn[hidden],
+      .book-quiz-answer-row[hidden],
+      .book-quiz-q2-guide[hidden],
+      .book-quiz-found-sentence[hidden],
+      .book-quiz-choices[hidden] {
+        display: none !important;
+      }
+
+      .book-quiz-panel {
+        display: none;
+        flex: 1 1 auto;
+        width: min(930px, calc(100vw - 260px));
+        min-height: 78px;
+        max-width: 930px;
+        padding: 10px 14px;
+        border: 2px solid #9a7b4b;
+        border-radius: 14px;
+        background: rgba(20, 16, 12, 0.97);
+        color: var(--text-main);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.58);
+        text-align: left;
+      }
+
+      .book-quiz-panel.visible {
+        display: block;
+      }
+
+      .book-quiz-panel h2 {
+        display: inline;
+        margin: 0 9px 0 0;
+        color: #f3d69c;
+        font-size: 17px;
+        line-height: 1.35;
+      }
+
+      .book-quiz-panel p {
+        display: inline;
+        margin: 0;
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1.38;
+      }
+
+      .book-quiz-answer-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        margin-left: 10px;
+        vertical-align: middle;
+      }
+
+      .book-quiz-answer-row input {
+        width: 160px;
+        min-width: 0;
+        padding: 7px 9px;
+        border: 2px solid #8b6f43;
+        border-radius: 8px;
+        background: #fffaf0;
+        color: #130c06;
+        font-size: 16px;
+        font-weight: 800;
+      }
+
+      .book-quiz-submit,
+      .book-quiz-choice {
+        border: 0;
+        border-radius: 8px;
+        background: #7b5930;
+        color: #fff5df;
+        font-size: 15px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      .book-quiz-submit {
+        padding: 8px 14px;
+      }
+
+      .book-quiz-submit:hover,
+      .book-quiz-choice:hover {
+        background: #946d3b;
+      }
+
+      .book-quiz-q2-guide {
+        display: block !important;
+        margin-top: 5px !important;
+        color: var(--hint-color);
+        font-size: 14px !important;
+      }
+
+      .book-quiz-found-sentence {
+        display: inline-block;
+        margin-top: 5px;
+        padding: 4px 8px;
+        border-radius: 7px;
+        background: rgba(143, 216, 200, 0.14);
+        color: #d9fff6;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .book-quiz-choices {
+        display: inline-flex;
+        gap: 7px;
+        margin: 5px 0 0 8px;
+        vertical-align: middle;
+      }
+
+      .book-quiz-choice {
+        padding: 7px 13px;
+      }
+
+      .book-quiz-feedback {
+        display: block !important;
+        min-height: 1.3em;
+        margin-top: 3px !important;
+        color: #ffb39e;
+        font-size: 14px !important;
+      }
+
+      .book-quiz-success {
+        color: #b9ffae !important;
+      }
+
+      /* 문제가 표시될 때 책을 아래로 내려 문제와 본문이 겹치지 않게 한다. */
+      #embeddedBookViewport {
+        transition: top 0.18s ease;
+      }
+
+      #bookScene.book-quiz-active #embeddedBookViewport {
+        top: 112px;
+      }
+
+      /* 149쪽 13번째 줄: 클릭 전에는 표시하지 않고, 클릭 후에만 형광 표시 */
+      #embeddedBook .line.book-q2-line {
+        position: relative;
+        z-index: 20;
+        pointer-events: auto;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* 149쪽은 마지막 문장이 페이지 번호와 겹치지 않도록 조금 압축한다. */
+      #embeddedBookLeftText[data-page="149"] {
+        font-size: 17pt;
+        line-height: 1.25;
+      }
+
+      #embeddedBook .line.book-q2-target {
+        cursor: pointer;
+        outline: none;
+      }
+
+      /* 정답 문장을 직접 누른 뒤에만 형광 초록색이 나타난다. */
+      #embeddedBook .line.book-q2-found {
+        border-radius: 4px;
+        background: linear-gradient(
+          transparent 24%,
+          rgba(112, 255, 0, 0.96) 24%,
+          rgba(75, 255, 35, 0.9) 90%,
+          transparent 90%
+        );
+        box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
+        box-shadow:
+          inset 0 -1px 0 rgba(18, 124, 0, 0.42),
+          0 0 5px rgba(93, 255, 32, 0.4);
+      }
+
+      @media (max-width: 820px), (orientation: portrait) {
+        .book-top-bar {
+          gap: 8px;
+        }
+
+        .book-quiz-panel {
+          width: auto;
+          max-width: none;
+          padding: 8px 10px;
+        }
+
+        .book-quiz-panel h2,
+        .book-quiz-panel p {
+          font-size: 13px;
+        }
+
+        .book-quiz-answer-row {
+          margin-left: 4px;
+        }
+
+        .book-quiz-answer-row input {
+          width: 105px;
+          padding: 6px 7px;
+          font-size: 13px;
+        }
+
+        .book-quiz-submit,
+        .book-quiz-choice {
+          padding: 6px 8px;
+          font-size: 12px;
+        }
+
+        #bookScene.book-quiz-active #embeddedBookViewport {
+          top: 102px;
+        }
+      }
+
+      #embeddedBookHint {
+        position: absolute;
+        left: 50%;
+        bottom: 24px;
+        transform: translateX(-50%);
+        color: rgba(205, 181, 139, 0.58);
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+        letter-spacing: 0.04em;
+        pointer-events: none;
+      }
+
+      @media (max-width: 700px), (orientation: portrait) {
+        #embeddedBookHint {
+          display: none;
+        }
+      }
+
+      /* 왼쪽 벽 서랍장 */
+      #dresserScene,#dresserDrawerScene,#dresserPasswordScene{background:#000}
+      #dresserTopLeftHotspot{left:22%;top:29%;width:27%;height:17%}
+      #dresserPasswordHotspot{left:50%;top:27%;width:29%;height:18%}
+      #dresserSecondHotspot{left:22%;top:46%;width:57%;height:19%}
+      #dresserThirdHotspot{left:22%;top:66%;width:57%;height:22%}
+      #dresserMagnifierHotspot{left:31%;top:29%;width:38%;height:34%;display:none}
+      #dresserHammerHotspot{left:29%;top:55%;width:43%;height:22%;display:none}
+      .dresser-password-panel{position:absolute;right:5%;top:9%;z-index:180;width:min(390px,42%);padding:18px;border:2px solid #927144;border-radius:16px;background:rgba(17,13,10,.96);color:var(--text-main);box-shadow:0 14px 32px rgba(0,0,0,.72)}
+      .dresser-password-panel h2{margin:0 0 10px;color:#f0d39b;font-size:23px}
+      .dresser-password-display{width:100%;min-height:52px;margin-bottom:12px;padding:10px 12px;border:2px solid #7d633c;border-radius:10px;background:#080706;color:#f7e6c8;font-size:25px;font-weight:900;letter-spacing:.24em;text-align:center}
+      .dresser-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+      .dresser-keypad button,.dresser-problem-button{min-height:48px;border:1px solid #8e7043;border-radius:9px;background:#4d3821;color:#fff1d6;font-size:19px;font-weight:800;cursor:pointer}
+      .dresser-problem-button{width:100%;margin-top:10px;background:#74532d}
+      .dresser-password-feedback{min-height:1.5em;margin-top:10px;color:var(--hint-color);font-size:15px;font-weight:800;line-height:1.45}
+      .dresser-question-modal{display:none;position:absolute;inset:0;z-index:520;align-items:center;justify-content:center;background:rgba(0,0,0,.78)}
+      .dresser-question-modal.show{display:flex}
+      .dresser-question-card{position:relative;width:min(680px,82%);min-height:250px;padding:30px;border:3px solid #8c6a3e;border-radius:18px;background:rgba(22,17,12,.98);color:var(--text-main);box-shadow:0 20px 50px rgba(0,0,0,.8)}
+      .dresser-question-card h2{margin:0 44px 18px 0;color:#f0d39b;font-size:28px}
+      .dresser-question-card p{font-size:20px;line-height:1.6}
+      .dresser-question-close{position:absolute;top:10px;right:14px;border:0;background:transparent;color:#f5e4c5;font-size:34px;cursor:pointer}
+      #dresserBurnMemo{display:none;position:absolute;left:27%;top:18%;z-index:170;width:39%;height:27%;border:0;background:transparent;cursor:pointer;filter:drop-shadow(0 8px 7px rgba(0,0,0,.65));transform:rotate(-2deg)}
+      #dresserBurnMemo::before{content:"";position:absolute;inset:0;background:linear-gradient(145deg,#e7d39d,#b99b60);clip-path:polygon(3% 5%,97% 1%,95% 96%,4% 100%,0 55%);box-shadow:inset 0 0 24px rgba(87,50,14,.45)}
+      #dresserBurnMemo::after{content:"쪽지";position:absolute;inset:0;display:grid;place-items:center;color:#4d3018;font:900 20px/1.2 Georgia,serif;text-shadow:0 1px #f5e6bd}
+      #dresserMemoModal{display:none;position:absolute;inset:0;z-index:620;align-items:center;justify-content:center;background:rgba(0,0,0,.82)}
+      #dresserMemoModal.show{display:flex}
+      .burning-memo{position:relative;width:min(590px,72%);min-height:250px;padding:55px 48px;display:grid;place-items:center;text-align:center;background:linear-gradient(145deg,#ead9a8,#b9975b);clip-path:polygon(2% 4%,98% 0,96% 97%,4% 100%,0 52%);color:#422913;font:900 30px/1.65 Georgia,"Noto Serif KR",serif;box-shadow:inset 0 0 40px rgba(86,45,9,.5),0 22px 55px rgba(0,0,0,.8)}
+      .burning-memo.burn{animation:memoBurn 2.7s ease-in forwards}
+      .burning-memo.burn::before{content:"";position:absolute;inset:-18px;background:radial-gradient(circle at 8% 88%,#fff6a4 0 2%,#ff9b18 4%,#d62908 8%,transparent 15%),radial-gradient(circle at 92% 72%,#fff6a4 0 2%,#ff8b12 5%,#c91c06 10%,transparent 18%),radial-gradient(circle at 50% 105%,#fff2a0 0 3%,#ff7b0d 8%,#a61104 15%,transparent 24%);filter:blur(2px);animation:flameFlicker .18s infinite alternate;pointer-events:none}
+      @keyframes flameFlicker{from{transform:scale(.98) rotate(-1deg);opacity:.76}to{transform:scale(1.04) rotate(1deg);opacity:1}}
+      @keyframes memoBurn{0%,18%{filter:none;opacity:1}55%{filter:sepia(1) brightness(.75);transform:scale(.96) rotate(1deg)}85%{filter:brightness(.25);opacity:.65;transform:scale(.78) rotate(-3deg)}100%{filter:brightness(0);opacity:0;transform:scale(.35) rotate(5deg)}}
+      .hammer-icon,.magnifier-icon{display:inline-block;font-size:34px}
+      .hammer-icon{transform:rotate(-18deg)}
+      #spiderScene{background:#000;overflow:hidden}
+      #spiderProblemBtn{left:18%;top:3%;bottom:auto;transform:none;width:155px;padding:12px}
+      .spider-quiz-panel{display:none;position:absolute;right:1.5%;top:15%;bottom:auto;z-index:210;width:min(350px,27%);padding:18px 20px;border:2px solid #9a7b4b;border-radius:15px;background:rgba(17,13,10,.97);color:#f4ead8;box-shadow:0 18px 42px rgba(0,0,0,.85)}
+      .spider-quiz-panel.show{display:block}
+      .spider-quiz-panel h2{margin:0 0 9px;color:#f0d39b;font-size:22px}
+      .spider-quiz-panel p{margin:7px 0;font-size:17px;line-height:1.4}
+      .spider-answer-row{display:flex;gap:9px;margin-top:14px}
+      .spider-answer-row input{flex:1;min-width:0;padding:11px 13px;border:2px solid #836842;border-radius:9px;background:#080706;color:#fff2dc;font-size:20px}
+      .spider-answer-row button,.spider-quiz-close{border:1px solid #967344;border-radius:9px;background:#684820;color:#fff1d6;font-weight:800;cursor:pointer}
+      .spider-answer-row button{padding:10px 17px}
+      .spider-quiz-close{position:absolute;right:12px;top:10px;border:0;background:transparent;font-size:29px}
+      #spiderQuizFeedback{min-height:1.6em;margin:13px 0 0;color:#8fd8c8;font-weight:800}
+      #spiderQuizFeedback.correct strong{color:#9ff0ae}
+      #spiderQuizFeedback.correct span{color:#79dfdf}
+      #spiderQuizFeedback.wrong{color:#ff8d85}
+      #spiderHintView{display:none;position:absolute;inset:0;z-index:620;background:#000}
+      #spiderHintView .scene-img{width:100%;height:100%;object-fit:contain}
+      /* 전체 방의 왼쪽 벽 아래에 직접 놓이는 작은 거미 */
+      #spiderMagnifierTarget{left:65.3%;top:64.6%;width:3%;height:6.2%;z-index:30;overflow:visible}
+      #spiderMagnifierTarget::before{content:"🕷";position:absolute;inset:0;display:grid;place-items:center;color:#211811;font-size:clamp(10px,1.12vw,17px);opacity:.68;filter:brightness(1.08) contrast(1.18);transform:rotate(-12deg);pointer-events:none}
+      #spiderMagnifierTarget.memo-clue-active::before{opacity:1;color:#2b1b0f;filter:brightness(1.65) contrast(1.45) drop-shadow(0 0 1px #ffe5a3) drop-shadow(0 0 5px rgba(255,205,105,.95)) drop-shadow(0 3px 4px rgba(0,0,0,.95));animation:spiderClueGlow 1.35s ease-in-out infinite alternate}
+      @keyframes spiderClueGlow{from{filter:brightness(1.48) contrast(1.4) drop-shadow(0 0 1px #ffe5a3) drop-shadow(0 0 3px rgba(255,205,105,.72)) drop-shadow(0 3px 4px rgba(0,0,0,.95))}to{filter:brightness(1.78) contrast(1.5) drop-shadow(0 0 2px #fff0b5) drop-shadow(0 0 7px rgba(255,205,105,1)) drop-shadow(0 3px 5px #000)}}
+      #wallScene{background:#111;overflow:hidden}
+      #wallScene .scene-img{object-fit:cover}
+      .wall-arrow{position:absolute;z-index:45;border:0;background:transparent;color:#fff;font-size:clamp(34px,4.3vw,64px);font-weight:900;line-height:1;cursor:pointer;text-shadow:0 2px 3px #000,0 0 5px rgba(0,0,0,.8);transition:color .18s,filter .18s,transform .18s}
+      .wall-arrow.found{color:#e32323;filter:drop-shadow(0 0 4px rgba(255,40,40,.8))}
+      .wall-arrow.wrong{color:#d19a3b;filter:drop-shadow(0 0 5px rgba(209,154,59,.9))}
+      /* 정답 경로: 오른쪽 → 왼쪽 → 오른쪽 → 왼쪽 → 숨은 벽돌 */
+      .arrow-a1{left:13%;top:15%;transform:rotate(8deg)}
+      .arrow-a2{left:68%;top:22%;transform:rotate(142deg)}
+      .arrow-a3{left:34%;top:49%;transform:rotate(27deg)}
+      .arrow-a4{left:72%;top:67%;transform:rotate(160deg)}
+      .arrow-a5{left:44%;top:79%;transform:rotate(-21deg)}
+      /* 정답 경로를 방해하는 가짜 화살표 4개 */
+      .arrow-d1{left:7%;top:42%;transform:rotate(180deg)}
+      .arrow-d2{left:18%;top:65%;transform:rotate(-58deg)}
+      .arrow-d3{left:84%;top:34%;transform:rotate(180deg)}
+      .arrow-d4{left:87%;top:10%;transform:rotate(-90deg)}
+      #looseBrickTarget{display:none;position:absolute;left:82%;top:64%;width:12%;height:11%;z-index:55;border:2px solid rgba(109,220,255,.75);border-radius:5px;background:rgba(90,210,255,.08);box-shadow:0 0 10px rgba(69,205,255,.7),inset 0 0 8px rgba(69,205,255,.28);cursor:pointer}
+      #wallHole{display:none;position:absolute;left:82%;top:64%;width:12%;height:11%;z-index:58;overflow:hidden;border:4px solid rgba(45,39,37,.9);background:#020304;box-shadow:inset 0 0 12px #000,0 3px 7px rgba(0,0,0,.68)}
+      #wallBulb{display:none;position:absolute;inset:0;width:100%;height:100%;z-index:2;border:0;padding:0;background:#020304;cursor:pointer}
+      #wallBulb img{width:100%;height:100%;object-fit:cover;display:block}
+      .blue-bulb-thumb{width:45px;height:45px;object-fit:cover;border-radius:50%;filter:drop-shadow(0 0 4px #278cff)}
+      .blue-bulb-thumb,.blue-flashlight-icon{cursor:grab;touch-action:none}
+      .blue-flashlight-icon{display:inline-block;font-size:36px;filter:drop-shadow(0 0 3px #6fd8ff) drop-shadow(0 0 8px #167cff)}
+      .inventory-flashlight{display:inline-block;font-size:36px;cursor:pointer;touch-action:none}
+      .flashlight-view{position:absolute;inset:0;z-index:460;display:none;background:rgba(0,0,0,.94)}
+      .flashlight-view.show{display:block}
+      .flashlight-view img{width:100%;height:100%;object-fit:contain;display:block}
+      .flashlight-view .close-view{position:absolute;right:3%;top:3%;z-index:2;width:52px;height:52px;border:2px solid rgba(235,215,175,.65);border-radius:50%;background:rgba(15,12,9,.9);color:#fff;font-size:32px;line-height:1;cursor:pointer}
+      #hiddenWallScene{background:#000;overflow:hidden}
+      #hiddenWallScene .scene-img{object-fit:cover}
+      #hiddenWallProblemBtn{left:18%;top:3%;bottom:auto;transform:none;width:155px;padding:12px}
+      .hidden-wall-quiz{display:none;position:absolute;left:20%;top:2%;z-index:220;width:76%;padding:14px 18px 15px;border:2px solid #4e8ecb;border-radius:15px;background:rgba(5,10,22,.94);color:#eaf5ff;box-shadow:0 0 24px rgba(31,116,255,.42)}
+      .hidden-wall-quiz.show{display:block}
+      .hidden-wall-quiz h2{margin:0 38px 5px 0;color:#8fd8ff;font-size:21px}
+      .hidden-wall-quiz p{margin:5px 0;font-size:16px;line-height:1.35}
+      .hidden-wall-choices{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:8px}
+      .hidden-wall-choices button{min-height:40px;padding:6px 4px;border:1px solid #5598d3;border-radius:8px;background:#183552;color:#eef8ff;font-size:16px;font-weight:800;cursor:pointer}
+      .hidden-wall-choices button:disabled{opacity:.58;cursor:default}
+      #hiddenWallFeedback.correct strong{color:#9ff0ae}
+      #hiddenWallFeedback.correct span{color:#70d8ff}
+      #hiddenWallFeedback.wrong{color:#ff8d85}
+
+    </style>
+  </head>
+  <body>
+    <div class="game">
+      <main class="stage" id="stage">
+        <section id="roomScene" class="scene active">
+          <img src="room.png" class="scene-img" alt="어두운 방" /><button
+            type="button"
+            id="ceiling"
+            class="hotspot"
+            onclick="openCeilingScene()"
+          ></button
+          ><button
+            type="button"
+            id="leftWall"
+            class="hotspot"
+            onclick="openWallScene()"
+          ></button
+          ><button
+            type="button"
+            id="leftDrawer"
+            class="hotspot"
+            onclick="openScene('dresserScene')"
+          ></button
+          ><button
+            type="button"
+            id="painting"
+            class="hotspot"
+            onclick="openPaintingScene()"
+          ></button
+          ><button
+            type="button"
+            id="desk"
+            class="hotspot"
+            onclick="openScene('deskScene')"
+          ></button
+          ><button
+            type="button"
+            id="bookshelf"
+            class="hotspot"
+            onclick="openScene('shelfScene')"
+          ></button
+          ><button
+            type="button"
+            id="mirror"
+            class="hotspot"
+            onclick="openScene('mirrorScene')"
+          ></button
+          ><button
+            type="button"
+            id="door"
+            class="hotspot"
+            onclick="openDoorScene()"
+          ></button>
+          <button type="button" id="spiderMagnifierTarget" class="hotspot" onclick="inspectSmallSpider()" aria-label="벽 아래의 작은 거미"></button>
+        </section>
+        <section id="ceilingScene" class="scene">
+          <img src="ceiling.png" class="scene-img" alt="낡은 천장에 드러난 수상한 문장">
+          <button type="button" class="back-btn" onclick="openScene('roomScene')">← 돌아가기</button>
+        </section>
+        <section id="doorScene" class="scene">
+          <img src="door.png" class="scene-img" alt="번호 자물쇠와 금속판이 달린 철문">
+          <button type="button" class="back-btn" onclick="openScene('roomScene')">← 돌아가기</button>
+          <button type="button" id="doorNoteTarget" onclick="openDoorNoteScene()" aria-label="철문 중앙의 작은 금속판"></button>
+          <button type="button" id="doorDialTarget" onclick="openDoorDialScene()" aria-label="철문 번호 다이얼 확대"></button>
+        </section>
+        <section id="doorNoteScene" class="scene">
+          <img src="door_note.png" class="scene-img" alt="철문 금속판에 새겨진 수수께끼 문장" onerror="if(!this.dataset.fallback){this.dataset.fallback='1';this.src='door_note(1).png';}">
+          <button type="button" class="back-btn" onclick="openScene('doorScene')">← 돌아가기</button>
+        </section>
+        <section id="doorDialScene" class="scene" aria-label="네 자리 철문 번호 다이얼">
+          <button type="button" class="back-btn" onclick="openScene('doorScene')">← 돌아가기</button>
+          <div id="dialFeedback" class="dial-feedback" aria-live="polite"></div>
+          <div class="dial-controls" aria-label="네 자리 비밀번호 입력">
+            <div class="dial-wheel-control" data-index="0"><button class="dial-arrow up" type="button" aria-label="첫째 숫자 올리기">▲</button><div class="dial-number">0</div><button class="dial-arrow down" type="button" aria-label="첫째 숫자 내리기">▼</button></div>
+            <div class="dial-wheel-control" data-index="1"><button class="dial-arrow up" type="button" aria-label="둘째 숫자 올리기">▲</button><div class="dial-number">0</div><button class="dial-arrow down" type="button" aria-label="둘째 숫자 내리기">▼</button></div>
+            <div class="dial-wheel-control" data-index="2"><button class="dial-arrow up" type="button" aria-label="셋째 숫자 올리기">▲</button><div class="dial-number">0</div><button class="dial-arrow down" type="button" aria-label="셋째 숫자 내리기">▼</button></div>
+            <div class="dial-wheel-control" data-index="3"><button class="dial-arrow up" type="button" aria-label="넷째 숫자 올리기">▲</button><div class="dial-number">0</div><button class="dial-arrow down" type="button" aria-label="넷째 숫자 내리기">▼</button></div>
+          </div>
+          <button type="button" class="dial-submit" onclick="checkDoorDial()">잠금 해제</button>
+        </section>
+        <section id="doorOpeningScene" class="scene">
+          <img src="door.png" class="opening-door" alt="천천히 열리는 철문">
+        </section>
+        <section id="paintingScene" class="scene">
+          <img id="paintingSceneImg" src="frame.png" class="scene-img" alt="숲과 붉은 지붕의 집이 그려진 액자">
+          <button type="button" class="back-btn" onclick="openScene('roomScene')">← 돌아가기</button>
+          <div id="paintingMagnifierTarget" aria-label="액자 오른쪽 위의 작은 글씨"></div>
+          <button type="button" id="paintingProblemBtn" class="problem-btn" onclick="showPaintingQuiz()">문제 보기</button>
+          <div id="paintingQuizPanel" class="painting-quiz-panel">
+            <button type="button" class="painting-quiz-close" onclick="closePaintingQuiz()" aria-label="문제 닫기">×</button>
+            <div id="paintingQuestion1">
+              <h2>문제 1</h2>
+              <p>밑줄 친 단어의 품사는?</p>
+              <div class="painting-choices">
+                <button type="button" onclick="checkPaintingAnswer1('부사')">부사</button>
+                <button type="button" onclick="checkPaintingAnswer1('관형사')">관형사</button>
+                <button type="button" onclick="checkPaintingAnswer1('동사')">동사</button>
+                <button type="button" onclick="checkPaintingAnswer1('형용사')">형용사</button>
+                <button type="button" onclick="checkPaintingAnswer1('감탄사')">감탄사</button>
+              </div>
+            </div>
+            <div id="paintingQuestion2">
+              <h2>문제 2</h2>
+              <p>문장 중에서 관형사가 사용되지 않은 것은?</p>
+              <div class="painting-choices q2">
+                <button type="button" onclick="checkPaintingAnswer2(1)">1. 멋진 너를 좋아해.</button>
+                <button type="button" onclick="checkPaintingAnswer2(2)">2. 큰 사건이 발생했어.</button>
+                <button type="button" onclick="checkPaintingAnswer2(3)">3. 새 물건을 갖고 싶어.</button>
+                <button type="button" onclick="checkPaintingAnswer2(4)">4. 그래도 시간은 흐른다.</button>
+              </div>
+            </div>
+            <p id="paintingQuizFeedback"></p>
+            <p id="paintingCodeHint">액자 속 나무만 여러 개 있네?</p>
+          </div>
+        </section>
+        <section id="mirrorScene" class="scene">
+          <img src="mirror.png" class="mirror-layer" alt="김이 서린 빈 거울">
+          <img id="mirrorSentenceImg" src="mirror_sentence.png" class="mirror-layer" alt="등 뒤가 서늘하다라는 문장이 나타난 거울">
+          <button type="button" class="back-btn" onclick="openScene('roomScene')">← 돌아가기</button>
+          <button type="button" id="mirrorProblemBtn" class="problem-btn" onclick="showMirrorQuiz()">문제 보기</button>
+          <div id="mirrorQuizPanel" class="mirror-quiz-panel">
+            <button type="button" class="mirror-quiz-close" onclick="closeMirrorQuiz()" aria-label="문제 닫기">×</button>
+            <div id="mirrorFirstQuestion">
+              <h2>거울 속 문제</h2>
+              <p>‘서늘하다’의 품사는?</p>
+              <div class="mirror-answer-row">
+                <input id="mirrorAnswerInput" type="text" autocomplete="off" placeholder="정답 입력" onkeydown="if(event.key==='Enter')checkMirrorAnswer()">
+                <button type="button" onclick="checkMirrorAnswer()">확인</button>
+              </div>
+              <button type="button" class="mirror-hint-btn" onclick="showMirrorInitialHint()">힌트 보기</button>
+              <p id="mirrorInitialHint">초성 힌트: ㅎㅇㅅ</p>
+              <p id="mirrorQuizFeedback"></p>
+            </div>
+            <div id="mirrorWordQuestion">
+              <h2>다음 문제</h2>
+              <p>다음 문장에서 형용사를 모두 눌러라.</p>
+              <p>
+                날씨가
+                <button type="button" class="mirror-word" data-word="좋아" onclick="chooseMirrorWord(this, true)">좋아</button>
+                하늘이
+                <button type="button" class="mirror-word" data-word="예뻐" onclick="chooseMirrorWord(this, true)">예뻐</button>
+                <button type="button" class="mirror-word" data-word="보인다" onclick="chooseMirrorWord(this, false)">보인다.</button>
+              </p>
+              <p id="mirrorWordFeedback"></p>
+              <p id="mirrorCodeHint">형용사의 고유번호는 6이다</p>
+            </div>
+          </div>
+        </section>
+        <section id="wallScene" class="scene">
+          <img src="wall.jpg" class="scene-img" alt="확대된 왼쪽 벽">
+          <button type="button" class="back-btn" onclick="openScene('roomScene')">← 돌아가기</button>
+          <button type="button" class="wall-arrow correct arrow-a1" onclick="followWallArrow(0, this)" aria-label="첫 번째 화살표">➜</button>
+          <button type="button" class="wall-arrow correct arrow-a2" onclick="followWallArrow(1, this)" aria-label="두 번째 화살표">➜</button>
+          <button type="button" class="wall-arrow correct arrow-a3" onclick="followWallArrow(2, this)" aria-label="세 번째 화살표">➜</button>
+          <button type="button" class="wall-arrow correct arrow-a4" onclick="followWallArrow(3, this)" aria-label="네 번째 화살표">➜</button>
+          <button type="button" class="wall-arrow correct arrow-a5" onclick="followWallArrow(4, this)" aria-label="다섯 번째 화살표">➜</button>
+          <button type="button" class="wall-arrow decoy arrow-d1" onclick="chooseDecoyArrow(this)" aria-label="가짜 화살표">➜</button>
+          <button type="button" class="wall-arrow decoy arrow-d2" onclick="chooseDecoyArrow(this)" aria-label="가짜 화살표">➜</button>
+          <button type="button" class="wall-arrow decoy arrow-d3" onclick="chooseDecoyArrow(this)" aria-label="가짜 화살표">➜</button>
+          <button type="button" class="wall-arrow decoy arrow-d4" onclick="chooseDecoyArrow(this)" aria-label="가짜 화살표">➜</button>
+          <button type="button" id="looseBrickTarget" onclick="inspectLooseBrick()" aria-label="수상한 벽돌"></button>
+          <div id="wallHole">
+            <button type="button" id="wallBulb" onclick="takeBlueBulb()" aria-label="파란 전구"><img src="bluebulb.png" alt="파란 전구"></button>
+          </div>
+        </section>
+        <section id="hiddenWallScene" class="scene">
+          <img src="wall_hidden.png" class="scene-img" alt="파란 손전등으로 비춘 벽의 숨은 문장">
+          <button type="button" class="back-btn" onclick="openScene('wallScene')">← 돌아가기</button>
+          <button type="button" id="hiddenWallProblemBtn" class="problem-btn" onclick="openHiddenWallQuiz()">문제 보기</button>
+          <div id="hiddenWallQuiz" class="hidden-wall-quiz">
+            <button type="button" class="spider-quiz-close" onclick="closeHiddenWallQuiz()" aria-label="문제 닫기">×</button>
+            <h2>숨은 벽의 문제</h2>
+            <p>빨간 네모 속 단어와 같은 품사의 단어는?</p>
+            <div class="hidden-wall-choices">
+              <button type="button" onclick="checkHiddenWallAnswer('예쁘다')">예쁘다</button>
+              <button type="button" onclick="checkHiddenWallAnswer('재미있다')">재미있다</button>
+              <button type="button" onclick="checkHiddenWallAnswer('오르내리다')">오르내리다</button>
+              <button type="button" onclick="checkHiddenWallAnswer('검붉다')">검붉다</button>
+              <button type="button" onclick="checkHiddenWallAnswer('값싸다')">값싸다</button>
+            </div>
+            <p id="hiddenWallFeedback"></p>
+          </div>
+        </section>
+        <section id="spiderScene" class="scene">
+          <img src="spider.png" class="scene-img" alt="돋보기로 확대한 거미">
+          <button type="button" class="back-btn" onclick="openScene('roomScene')">← 돌아가기</button>
+          <button type="button" id="spiderProblemBtn" class="problem-btn" onclick="openSpiderQuiz()">문제 보기</button>
+          <div id="spiderQuizPanel" class="spider-quiz-panel">
+            <button type="button" class="spider-quiz-close" onclick="closeSpiderQuiz()" aria-label="문제 닫기">×</button>
+            <h2>거미의 문제</h2>
+            <p>체언에는 명사, 대명사, X가 있다.</p>
+            <p>X가 무엇인지 쓰시오.</p>
+            <div class="spider-answer-row">
+              <input id="spiderQuizAnswer" type="text" autocomplete="off" placeholder="정답 입력" onkeydown="if(event.key === 'Enter') checkSpiderQuizAnswer()">
+              <button type="button" onclick="checkSpiderQuizAnswer()">확인</button>
+            </div>
+            <p id="spiderQuizFeedback"></p>
+          </div>
+        </section>
+        <section id="deskScene" class="scene">
+          <img
+            id="deskImg"
+            src="desk_note.png"
+            class="scene-img"
+            alt="책상 확대"
+          /><button
+            type="button"
+            class="back-btn"
+            onclick="openScene('roomScene')"
+          >
+            ← 돌아가기</button
+          ><button
+            type="button"
+            id="memoHotspot"
+            class="hotspot"
+            onclick="openMemoView(false)"
+          ></button
+          ><button
+            type="button"
+            id="bookMemoHotspot"
+            class="hotspot"
+            onclick="openBookMemoView()"
+          ></button
+          ><button
+            type="button"
+            id="leftTopDrawerHotspot"
+            class="hotspot"
+            onclick="openLeftDrawerScene()"
+          ></button
+          ><button
+            type="button"
+            id="deskKeyholeHotspot"
+            class="hotspot"
+            onclick="checkCenterDrawer()"
+          ></button>
+        </section>
+        <section id="leftDrawerScene" class="scene">
+          <img
+            id="leftDrawerImg"
+            src="drawer_lockde_key_note.png"
+            class="scene-img"
+            alt="왼쪽 첫 번째 서랍"
+          /><button
+            type="button"
+            class="back-btn"
+            onclick="openScene('deskScene')"
+          >
+            ← 돌아가기</button
+          ><button
+            type="button"
+            id="keyHotspot"
+            class="hotspot"
+            onclick="takeKey()"
+          ></button>
+        </section>
+        <section id="centerDrawerScene" class="scene">
+          <img
+            id="centerDrawerImg"
+            src="drawer_open.png"
+            class="scene-img"
+            alt="가운데 서랍"
+          /><button
+            type="button"
+            class="back-btn"
+            onclick="openScene('deskScene')"
+          >
+            ← 돌아가기</button
+          ><button
+            type="button"
+            id="flashlightHotspot"
+            class="hotspot"
+            onclick="takeFlashlight()"
+          ></button>
+        </section>
+
+        <section id="dresserScene" class="scene">
+          <img id="dresserMainImg" src="dresser.png" class="scene-img" alt="서랍장 확대">
+          <button type="button" class="back-btn" onclick="openScene('roomScene')">← 돌아가기</button>
+          <button type="button" id="dresserTopLeftHotspot" class="hotspot" onclick="openDresserDrawer('first')" aria-label="첫 번째 서랍"></button>
+          <button type="button" id="dresserPasswordHotspot" class="hotspot" onclick="openDresserPassword()" aria-label="비밀번호 서랍"></button>
+          <button type="button" id="dresserSecondHotspot" class="hotspot" onclick="openDresserDrawer('second')" aria-label="두 번째 서랍"></button>
+          <button type="button" id="dresserThirdHotspot" class="hotspot" onclick="openDresserDrawer('third')" aria-label="세 번째 서랍"></button>
+        </section>
+
+        <section id="dresserDrawerScene" class="scene">
+          <img id="dresserDrawerImg" src="dresser_first_open_magnifier.png" class="scene-img" alt="열린 서랍">
+          <button type="button" class="back-btn" onclick="openScene('dresserScene')">← 돌아가기</button>
+          <button type="button" id="dresserMagnifierHotspot" class="hotspot" onclick="takeMagnifier()" aria-label="돋보기"></button>
+          <button type="button" id="dresserHammerHotspot" class="hotspot" onclick="takeHammer()" aria-label="망치"></button>
+        </section>
+
+        <section id="dresserPasswordScene" class="scene">
+          <img id="dresserPasswordImg" src="dresser_first_password.png" class="scene-img" alt="비밀번호 서랍">
+          <button type="button" class="back-btn" onclick="openScene('dresserScene')">← 돌아가기</button>
+          <button type="button" id="dresserBurnMemo" onclick="readDresserMemo()" aria-label="서랍 속 쪽지"></button>
+          <div id="dresserPasswordPanel" class="dresser-password-panel">
+            <h2>비밀번호 입력</h2>
+            <div id="dresserPasswordDisplay" class="dresser-password-display">_ _ _ _</div>
+            <div class="dresser-keypad">
+              <button type="button" onclick="pressDresserNumber('1')">1</button>
+              <button type="button" onclick="pressDresserNumber('2')">2</button>
+              <button type="button" onclick="pressDresserNumber('3')">3</button>
+              <button type="button" onclick="pressDresserNumber('4')">4</button>
+              <button type="button" onclick="pressDresserNumber('5')">5</button>
+              <button type="button" onclick="pressDresserNumber('6')">6</button>
+              <button type="button" onclick="pressDresserNumber('7')">7</button>
+              <button type="button" onclick="pressDresserNumber('8')">8</button>
+              <button type="button" onclick="pressDresserNumber('9')">9</button>
+              <button type="button" onclick="clearDresserPassword()">지우기</button>
+              <button type="button" onclick="pressDresserNumber('0')">0</button>
+              <button type="button" onclick="submitDresserPassword()">확인</button>
+            </div>
+            <button type="button" class="dresser-problem-button" onclick="openDresserQuestion()">문제 보기</button>
+            <div id="dresserPasswordFeedback" class="dresser-password-feedback"></div>
+          </div>
+        </section>
+
+        <div id="dresserQuestionModal" class="dresser-question-modal">
+          <div class="dresser-question-card">
+            <button type="button" class="dresser-question-close" onclick="closeDresserQuestion()">×</button>
+            <h2>서랍 비밀번호 문제</h2>
+            <div id="dresserQuestionText">
+              <p>① 거미의 다리는 몇 개일까?</p>
+              <p>② 무지개의 색은 몇 개일까?</p>
+              <p>③ 삼각형의 꼭짓점은 몇 개일까?</p>
+              <p>④ 한 해의 계절은 몇 개일까?</p>
+              <p class="action-hint">답을 차례대로 눌러라.</p>
+            </div>
+            <p class="action-hint">문제의 정답을 숫자 비밀번호로 입력하세요.</p>
+          </div>
+        </div>
+
+        <div id="dresserMemoModal">
+          <div id="dresserMemoPaper" class="burning-memo">거울 앞 하찮은 존재라도<br>눈 여겨 보길...</div>
+        </div>
+
+        <section id="shelfScene" class="scene">
+          <div class="portrait-wrap">
+            <img src="shelf.png" alt="책장 확대" /><button
+              type="button"
+              id="bookKorean"
+              class="book-hotspot"
+              onclick="triggerBookEvent('korean')"
+            ></button
+            ><button
+              type="button"
+              id="bookAnimal"
+              class="book-hotspot"
+              onclick="triggerBookEvent('animal')"
+            ></button
+            ><button
+              type="button"
+              id="book1984"
+              class="book-hotspot"
+              onclick="triggerBookEvent('1984')"
+            ></button
+            ><button
+              type="button"
+              id="bookDemian"
+              class="book-hotspot"
+              onclick="triggerBookEvent('demian')"
+            ></button
+            ><button
+              type="button"
+              id="bookPrince"
+              class="book-hotspot"
+              onclick="triggerBookEvent('prince')"
+            ></button
+            ><button
+              type="button"
+              id="bookThreeKingdoms"
+              class="book-hotspot"
+              onclick="triggerBookEvent('threeKingdoms')"
+            ></button
+            ><button
+              type="button"
+              id="bookSherlock"
+              class="book-hotspot"
+              onclick="triggerBookEvent('sherlock')"
+            ></button
+            ><button
+              type="button"
+              id="bookMockingbird"
+              class="book-hotspot"
+              onclick="triggerBookEvent('mockingbird')"
+            ></button
+            ><button
+              type="button"
+              id="bookPride"
+              class="book-hotspot"
+              onclick="triggerBookEvent('pride')"
+            ></button
+            ><button
+              type="button"
+              id="bookLesMis"
+              class="book-hotspot"
+              onclick="triggerBookEvent('lesmis')"
+            ></button
+            ><button
+              type="button"
+              id="bookGatsby"
+              class="book-hotspot"
+              onclick="triggerBookEvent('gatsby')"
+            ></button
+            ><button
+              type="button"
+              id="bookCatcher"
+              class="book-hotspot"
+              onclick="triggerBookEvent('catcher')"
+            ></button
+            ><button
+              type="button"
+              id="bookPotter"
+              class="book-hotspot"
+              onclick="triggerBookEvent('potter')"
+            ></button>
+          </div>
+          <button
+            type="button"
+            class="back-btn"
+            onclick="openScene('roomScene')"
+          >
+            ← 돌아가기
+          </button>
+        </section>
+        <section id="bookScene" class="scene">
+          <div id="embeddedBookViewport">
+            <div
+              id="embeddedBook"
+              aria-label="147쪽부터 156쪽까지 넘겨 볼 수 있는 낡은 책"
+            >
+              <section class="embedded-book-page left" aria-live="polite">
+                <div id="embeddedBookLeftText"></div>
+                <div
+                  id="embeddedBookLeftNumber"
+                  class="embedded-book-page-number"
+                ></div>
+              </section>
+              <section class="embedded-book-page right" aria-live="polite">
+                <div id="embeddedBookRightText"></div>
+                <div
+                  id="embeddedBookRightNumber"
+                  class="embedded-book-page-number"
+                ></div>
+              </section>
+              <button
+                id="embeddedBookPrev"
+                class="embedded-book-nav"
+                type="button"
+                aria-label="이전 페이지"
+              >
+                <span>‹</span>
+              </button>
+              <button
+                id="embeddedBookNext"
+                class="embedded-book-nav"
+                type="button"
+                aria-label="다음 페이지"
+              >
+                <span>›</span>
+              </button>
+            </div>
+            <div id="embeddedBookHint">
+              화살표 버튼 또는 키보드 ← → 로 페이지를 넘길 수 있습니다.
+            </div>
+          </div>
+          <div class="book-top-bar">
+            <button
+              class="back-btn book-back-btn"
+              type="button"
+              onclick="openScene('shelfScene')"
+            >
+              ← 책장으로
+            </button>
+            <button
+              id="bookQuizOpenBtn"
+              class="book-quiz-open-btn"
+              type="button"
+              onclick="openBookQuiz()"
+            >
+              문제 보기
+            </button>
+            <section
+              id="bookQuizPanel"
+              class="book-quiz-panel"
+              aria-live="polite"
+              aria-label="책 속 조사 문제"
+            >
+              <div id="bookQuizQ1">
+                <h2>문제 1.</h2>
+                <p>다음 문장에서 형광펜으로 표시된 단어의 품사는?</p>
+                <p id="bookQuizGuide1" class="book-quiz-q2-guide">
+                  획득한 메모지를 확인해보자.
+                </p>
+                <div id="bookQuizAnswer1Area" class="book-quiz-answer-row" hidden>
+                  <input
+                    id="bookQuizAnswer1"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="정답 입력"
+                    onkeydown="if (event.key === 'Enter') checkBookQuizAnswer1()"
+                  />
+                  <button
+                    type="button"
+                    class="book-quiz-submit"
+                    onclick="checkBookQuizAnswer1()"
+                  >
+                    확인
+                  </button>
+                </div>
+                <p id="bookQuizFeedback1" class="book-quiz-feedback"></p>
+              </div>
+              <div id="bookQuizQ2" hidden>
+                <h2>문제 2.</h2>
+                <p>
+                  149쪽 13번째 줄에서 사용된 조사 중 단어가 문장에서 주어의
+                  역할을 할 수 있게 해주는 것은?
+                </p>
+                <p class="book-quiz-q2-guide">
+                  149쪽으로 이동한 뒤 13번째 줄의 문장을 직접 누르세요.
+                </p>
+                <div
+                  id="bookQuizFoundSentence"
+                  class="book-quiz-found-sentence"
+                  hidden
+                >
+                  찾은 문장: 최 기자가 가장 먼저 사다리를 타고 올라갔다.
+                </div>
+                <div id="bookQuizChoices" class="book-quiz-choices" hidden>
+                  <button type="button" class="book-quiz-choice" onclick="checkBookQuizAnswer2(1)">1. 가</button>
+                  <button type="button" class="book-quiz-choice" onclick="checkBookQuizAnswer2(2)">2. 를</button>
+                  <button type="button" class="book-quiz-choice" onclick="checkBookQuizAnswer2(3)">3. -고</button>
+                </div>
+                <p id="bookQuizFeedback2" class="book-quiz-feedback"></p>
+              </div>
+              <div id="bookQuizDone" hidden>
+                <h2>완료!</h2>
+                <p class="book-quiz-success">
+                  두 문제를 모두 해결했다. 153쪽 7번째 줄에서 사용된 조사의 개수를 기억하자.
+                </p>
+              </div>
+            </section>
+          </div>
+        </section>
+        <div id="memoView" class="image-modal">
+          <img src="memo_pronoun.png" class="memo-img" alt="대명사 문제 메모" />
+          <div class="memo-top-bar">
+            <button type="button" class="back-btn" onclick="closeMemoView()">
+              ← 돌아가기
+            </button>
+            <div id="inlineQuestion" class="inline-question">
+              <div id="q1Box">
+                <p>
+                  <b>문제 1.</b> 다음 문장에서 특히 더 많이 나타나는 품사는
+                  무엇일까?
+                </p>
+                <input
+                  id="answerInput"
+                  type="text"
+                  placeholder="품사를 입력하시오"
+                /><button
+                  type="button"
+                  id="answerBtn"
+                  onclick="checkMemoAnswer()"
+                >
+                  확인
+                </button>
+              </div>
+              <div id="q2Box" hidden>
+                <p>
+                  <b>문제 2.</b> 말하는 이가 자기와 듣는 이를 포함한 여러 사람을
+                  가리키는 일인칭 대명사는?
+                </p>
+                <p class="action-hint">메모지에서 알맞은 단어를 직접 눌러라.</p>
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            id="problemOpenBtn"
+            class="problem-btn"
+            onclick="showMemoQuestion()"
+          >
+            문제 보기</button
+          ><button
+            type="button"
+            class="pronoun-word"
+            id="wordHe"
+            onclick="checkPronounWord('그')"
+          ></button
+          ><button
+            type="button"
+            class="pronoun-word"
+            id="wordWe"
+            onclick="checkPronounWord('우리')"
+          ></button
+          ><button
+            type="button"
+            class="pronoun-word"
+            id="wordMy"
+            onclick="checkPronounWord('나')"
+          ></button
+          ><button
+            type="button"
+            class="pronoun-word"
+            id="wordThese"
+            onclick="checkPronounWord('이것')"
+          ></button
+          ><button
+            type="button"
+            class="pronoun-word"
+            id="wordThat"
+            onclick="checkPronounWord('그곳')"
+          ></button>
+        </div>
+        <div id="bookMemoView" class="image-modal">
+          <img
+            src="torn_note.png"
+            class="memo-img"
+            alt="153쪽 7줄 메모"
+          /><button
+            type="button"
+            class="back-btn"
+            onclick="closeBookMemoView()"
+          >
+            ← 돌아가기</button
+          ><button
+            type="button"
+            id="keepBookMemoBtn"
+            class="problem-btn"
+            onclick="takeBookMemo()"
+          >
+            보관하기
+          </button>
+        </div>
+        <div id="spiderHintView">
+          <img src="spider.png" class="scene-img" alt="확대된 거미 사진">
+          <button type="button" class="back-btn" onclick="closeSpiderHintPhoto()">거미 사진 닫기</button>
+        </div>
+        <div
+          id="scareOverlay"
+          class="scare-overlay"
+          onclick="closeBookEffect()"
+        >
+          <div id="effectSymbol" class="effect-symbol"></div>
+          <div id="scareText"></div>
+        </div>
+        <button
+          type="button"
+          id="inventoryBtn"
+          class="corner-btn"
+          onclick="togglePopup('inventoryPopup')"
+        >
+          <span class="icon">🎒</span><span>인벤토리</span></button
+        ><button
+          type="button"
+          id="hintBtn"
+          class="corner-btn"
+          onclick="togglePopup('hintPopup')"
+        >
+          <span class="icon">🗒️</span><span>힌트 노트</span>
+        </button>
+        <aside id="inventoryPopup" class="popup">
+          <button
+            type="button"
+            class="close"
+            onclick="closePopup('inventoryPopup')"
+          >
+            ×
+          </button>
+          <h2>인벤토리</h2>
+          <div class="inventory-grid">
+            <div id="slot1" class="slot">비어 있음</div>
+            <div id="slot2" class="slot"></div>
+            <div id="slot3" class="slot"></div>
+            <div id="slot4" class="slot"></div>
+            <div id="slot5" class="slot"></div>
+            <div id="slot6" class="slot"></div>
+            <div id="slot7" class="slot"></div>
+            <div id="slot8" class="slot"></div>
+          </div>
+        </aside>
+        <aside id="hintPopup" class="popup">
+          <button type="button" class="close" onclick="closePopup('hintPopup')">
+            ×
+          </button>
+          <h2>힌트 내용</h2>
+          <div id="hintText">아직 모은 힌트가 없다.</div>
+        </aside>
+        <button type="button" id="ceilingVoiceProblemBtn" onclick="openCeilingVoiceQuiz()">기이한 소리 확인하기</button>
+        <div id="ceilingVoiceQuiz" role="dialog" aria-modal="true" aria-label="기이한 음성의 품사 문제">
+          <div class="ceiling-voice-card">
+            <button type="button" class="ceiling-voice-close" onclick="closeCeilingVoiceQuiz()" aria-label="문제 닫기">×</button>
+            <div id="ceilingVoiceTranscript">
+              <h2>기이한 소리</h2>
+              <p class="ceiling-voice-transcript">(지지직하는 기계음)<br>야, 어머나, 이런, 안녕, 안녕, 안녕, 하하하, 앗…</p>
+              <button type="button" class="ceiling-voice-next" onclick="showCeilingVoiceQuestion()">문제 보기</button>
+            </div>
+            <div id="ceilingVoiceQuestion" hidden>
+              <h2>기이한 음성의 정체</h2>
+              <p>기이한 음성 속 사용된 단어의 품사는 무엇일까?</p>
+              <div class="ceiling-voice-choices">
+                <button type="button" onclick="checkCeilingVoiceAnswer('부사')">부사</button>
+                <button type="button" onclick="checkCeilingVoiceAnswer('관형사')">관형사</button>
+                <button type="button" onclick="checkCeilingVoiceAnswer('감탄사')">감탄사</button>
+                <button type="button" onclick="checkCeilingVoiceAnswer('동사')">동사</button>
+                <button type="button" onclick="checkCeilingVoiceAnswer('형용사')">형용사</button>
+              </div>
+              <p id="ceilingVoiceFeedback" aria-live="polite"></p>
+            </div>
+          </div>
+        </div>
+        <div id="dialog" class="dialog"></div>
+        <div id="flashlightView" class="flashlight-view" role="dialog" aria-modal="true" aria-label="손전등 확대 보기">
+          <img id="flashlightViewImg" src="flashlight.png" alt="손전등 확대 이미지">
+          <button type="button" class="close-view" onclick="closeFlashlightView()" aria-label="확대 이미지 닫기">×</button>
+        </div>
+        <div id="escapeSuccess"><div class="escape-card"><h1>탈출 성공!</h1><p>방을 무사히 빠져나왔습니다.</p><p class="escape-time">탈출 시간 <span id="escapeElapsed">00:00</span></p><p id="escapeFinishedAt"></p></div></div>
+      </main>
+    </div>
+    <script>
+      // @ts-nocheck
+      const game = {
+        currentScene: "roomScene",
+        flags: {
+          memoSolved: false,
+          memoQuestion1Solved: false,
+          memoQuestion2Solved: false,
+          leftDrawerUnlocked: false,
+          keyTaken: false,
+          centerDrawerOpened: false,
+          flashlightTaken: false,
+          bookMemoTaken: false,
+          bookQuizOpened: false,
+          bookClueRevealed: false,
+          bookQuizQuestion1Solved: false,
+          bookQuizTargetLineFound: false,
+          bookQuizSolved: false,
+          dresserFirstOpened: false,
+          dresserMagnifierTaken: false,
+          dresserPasswordOpened: false,
+          dresserMemoBurned: false,
+          spiderClueFound: false,
+          dresserSecondOpened: false,
+          dresserThirdOpened: false,
+          dresserHammerTaken: false,
+          wallArrowsFound: 0,
+          looseBrickFound: false,
+          wallBroken: false,
+          blueBulbTaken: false,
+          blueFlashlightMade: false,
+          hiddenWallRevealed: false,
+          hiddenWallQuizSolved: false,
+          mirrorQuestionSolved: false,
+          mirrorClueSolved: false,
+          ceilingMachineSoundHeard: false,
+          ceilingQuizAvailable: false,
+          ceilingQuizSolved: false,
+          ceilingReady: false,
+          paintingMagnified: false,
+          paintingQuestion1Solved: false,
+          paintingQuizSolved: false,
+        },
+        inventory: { key: false, flashlight: false, bookMemo: false, magnifier: false, hammer: false, blueBulb: false, blueFlashlight: false },
+        hints: [],
+        bookEventsSeen: {
+          animal: false,
+          1984: false,
+          demian: false,
+          prince: false,
+          threeKingdoms: false,
+          sherlock: false,
+          mockingbird: false,
+          pride: false,
+          lesmis: false,
+          gatsby: false,
+          catcher: false,
+          potter: false,
+        },
+        draggingItem: null,
+        dragGhost: null,
+        currentDresserDrawer: null,
+        dresserPasswordInput: "",
+        doorDial: [0, 0, 0, 0],
+        startedAt: Date.now(),
+        escapedAt: null,
+      };
+      function openScene(sceneId) {
+        const target = document.getElementById(sceneId);
+        if (!target) {
+          console.error(`존재하지 않는 장면: ${sceneId}`);
+          return;
+        }
+        game.currentScene = sceneId;
+        if (sceneId === "bookScene") requestAnimationFrame(fitEmbeddedBook);
+        document
+          .querySelectorAll(".scene")
+          .forEach((s) => s.classList.remove("active"));
+        target.classList.add("active");
+        closePopup("inventoryPopup");
+        closePopup("hintPopup");
+        closeAllOverlays();
+        if (sceneId === "deskScene") updateDeskImage();
+        if (sceneId === "leftDrawerScene") updateLeftDrawer();
+        if (sceneId === "centerDrawerScene") updateCenterDrawer();
+        if (sceneId === "bookScene") updateBookQuizUI();
+        if (sceneId === "dresserScene") updateDresserMain();
+        if (sceneId === "dresserDrawerScene") updateDresserDrawer();
+        if (sceneId === "dresserPasswordScene") updateDresserPasswordScene();
+        if (sceneId === "spiderScene") updateSpiderQuizUI();
+        if (sceneId === "roomScene") updateSpiderVisibility();
+        if (sceneId === "wallScene") updateWallScene();
+        if (sceneId === "hiddenWallScene") updateHiddenWallQuiz();
+        if (sceneId === "mirrorScene") updateMirrorScene();
+        if (sceneId === "paintingScene") updatePaintingScene();
+      }
+      function closeAllOverlays() {
+        document.getElementById("memoView").style.display = "none";
+        document.getElementById("bookMemoView").style.display = "none";
+        document.getElementById("inlineQuestion").style.display = "none";
+        hidePronounWords();
+        closeBookEffect();
+        document.getElementById("dresserQuestionModal")?.classList.remove("show");
+        document.getElementById("spiderQuizPanel")?.classList.remove("show");
+        document.getElementById("hiddenWallQuiz")?.classList.remove("show");
+        document.getElementById("mirrorQuizPanel")?.classList.remove("show");
+        document.getElementById("paintingQuizPanel")?.classList.remove("show");
+        closeFlashlightView();
+        document.getElementById("spiderHintView").style.display = "none";
+      }
+      function selectArea(name) {
+        showDialog(`${name}을(를) 살펴본다.`);
+      }
+      function openPaintingScene() {
+        openScene("paintingScene");
+        showDialog("액자 오른쪽 위에 뭐가 있는데, 너무 작아서 보이지 않아.");
+      }
+      function updatePaintingScene() {
+        const magnified = game.flags.paintingMagnified;
+        document.getElementById("paintingSceneImg").src = magnified ? "frame_zoom.png" : "frame.png";
+        document.getElementById("paintingProblemBtn").style.display = magnified ? "block" : "none";
+        updatePaintingQuizUI();
+      }
+      function tryUseMagnifierOnPainting(x, y) {
+        if (game.currentScene !== "paintingScene") return false;
+        const r = document.getElementById("paintingMagnifierTarget").getBoundingClientRect();
+        const ok = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+        if (!ok) {
+          showDialog("돋보기를 액자 오른쪽 위의 작은 글씨에 정확히 놓아 보자.");
+          return true;
+        }
+        game.flags.paintingMagnified = true;
+        updatePaintingScene();
+        showDialog("작은 글씨가 선명하게 보인다.");
+        return true;
+      }
+      function showPaintingQuiz() {
+        if (!game.flags.paintingMagnified) return;
+        document.getElementById("paintingQuizPanel").classList.add("show");
+        updatePaintingQuizUI();
+      }
+      function closePaintingQuiz() {
+        document.getElementById("paintingQuizPanel").classList.remove("show");
+      }
+      function checkPaintingAnswer1(answer) {
+        const feedback = document.getElementById("paintingQuizFeedback");
+        if (answer !== "관형사") {
+          feedback.textContent = "오답이다. 밑줄 친 두 단어의 역할을 다시 살펴보자.";
+          return;
+        }
+        game.flags.paintingQuestion1Solved = true;
+        feedback.textContent = "정답이다. 두 번째 문제를 풀어 보자.";
+        updatePaintingQuizUI();
+      }
+      function checkPaintingAnswer2(answer) {
+        if (game.flags.paintingQuizSolved) return;
+        const feedback = document.getElementById("paintingQuizFeedback");
+        if (answer !== 3) {
+          feedback.textContent = "오답이다. 각 문장에서 체언을 꾸미는 말을 다시 찾아보자.";
+          return;
+        }
+        game.flags.paintingQuizSolved = true;
+        addHint("액자 속 나무만 여러 개 있네?");
+        updatePaintingQuizUI();
+        showDialog("관형사와 관련된 단서를 찾았다.");
+      }
+      function updatePaintingQuizUI() {
+        const q1Solved = game.flags.paintingQuestion1Solved;
+        const solved = game.flags.paintingQuizSolved;
+        document.getElementById("paintingQuestion1").style.display = q1Solved ? "none" : "block";
+        document.getElementById("paintingQuestion2").style.display = q1Solved ? "block" : "none";
+        document.querySelectorAll("#paintingQuestion2 button").forEach((button) => button.disabled = solved);
+        const feedback = document.getElementById("paintingQuizFeedback");
+        const hint = document.getElementById("paintingCodeHint");
+        if (solved) {
+          feedback.textContent = "정답이다.";
+          feedback.style.color = "#9ff0ae";
+          hint.style.display = "block";
+        } else {
+          feedback.style.color = "#ff918a";
+          hint.style.display = "none";
+        }
+      }
+      let mirrorRevealTimer = null;
+      const mirrorChosenAdjectives = new Set();
+      function updateMirrorScene() {
+        const sentence = document.getElementById("mirrorSentenceImg");
+        sentence.classList.remove("revealed");
+        clearTimeout(mirrorRevealTimer);
+        mirrorRevealTimer = setTimeout(() => sentence.classList.add("revealed"), 850);
+        updateMirrorQuizUI();
+      }
+      function showMirrorQuiz() {
+        document.getElementById("mirrorQuizPanel").classList.add("show");
+        updateMirrorQuizUI();
+        if (!game.flags.mirrorQuestionSolved) {
+          setTimeout(() => document.getElementById("mirrorAnswerInput")?.focus(), 80);
+        }
+      }
+      function closeMirrorQuiz() {
+        document.getElementById("mirrorQuizPanel").classList.remove("show");
+      }
+      function showMirrorInitialHint() {
+        document.getElementById("mirrorInitialHint").style.display = "block";
+      }
+      function checkMirrorAnswer() {
+        const input = document.getElementById("mirrorAnswerInput");
+        const feedback = document.getElementById("mirrorQuizFeedback");
+        if (input.value.trim().replace(/\s+/g, "") !== "형용사") {
+          feedback.textContent = "오답이다. 초성 힌트를 참고해 다시 생각해 보자.";
+          return;
+        }
+        game.flags.mirrorQuestionSolved = true;
+        feedback.textContent = "정답이다! 다음 문장에서 형용사를 모두 찾아보자.";
+        updateMirrorQuizUI();
+      }
+      function chooseMirrorWord(button, isAdjective) {
+        const feedback = document.getElementById("mirrorWordFeedback");
+        if (!isAdjective) {
+          feedback.textContent = "‘보인다’는 형용사가 아니다. 다시 찾아보자.";
+          feedback.style.color = "#ff9890";
+          return;
+        }
+        button.classList.add("selected");
+        mirrorChosenAdjectives.add(button.dataset.word);
+        feedback.style.color = "#9fd5ff";
+        if (mirrorChosenAdjectives.has("좋아") && mirrorChosenAdjectives.has("예뻐")) {
+          game.flags.mirrorClueSolved = true;
+          feedback.textContent = "두 형용사를 모두 찾았다.";
+          document.getElementById("mirrorCodeHint").style.display = "block";
+          if (!game.hints.includes("형용사의 고유번호는 6이다")) {
+            game.hints.push("형용사의 고유번호는 6이다");
+            renderHints();
+          }
+          if (!game.flags.ceilingMachineSoundHeard) {
+            window.setTimeout(triggerCeilingMachineSound, 1200);
+          }
+          return;
+        }
+        feedback.textContent = "형용사를 하나 찾았다. 하나가 더 있다.";
+      }
+      function updateMirrorQuizUI() {
+        const solved = game.flags.mirrorQuestionSolved;
+        document.getElementById("mirrorFirstQuestion").style.display = solved ? "none" : "block";
+        document.getElementById("mirrorWordQuestion").style.display = solved ? "block" : "none";
+        document.querySelectorAll("#mirrorWordQuestion .mirror-word[data-word]").forEach((button) => {
+          button.classList.toggle("selected", mirrorChosenAdjectives.has(button.dataset.word));
+        });
+        document.getElementById("mirrorCodeHint").style.display = game.flags.mirrorClueSolved ? "block" : "none";
+      }
+      function triggerCeilingMachineSound() {
+        if (game.flags.ceilingMachineSoundHeard) return;
+        game.flags.ceilingMachineSoundHeard = true;
+        closeMirrorQuiz();
+        showDialog("천장에서 이상한 소리가 난다.");
+        window.setTimeout(() => {
+          showDialog("(지지직하는 기계음)");
+        }, 2400);
+        window.setTimeout(() => {
+          showBlueDialog("기이한 음성 속에서 한가지 품사로만 말하고 있군.");
+        }, 4800);
+        window.setTimeout(() => {
+          game.flags.ceilingQuizAvailable = true;
+          document.getElementById("ceilingVoiceProblemBtn").style.display = "block";
+        }, 7200);
+      }
+      function openCeilingVoiceQuiz() {
+        if (!game.flags.ceilingQuizAvailable || game.flags.ceilingQuizSolved) return;
+        document.getElementById("ceilingVoiceTranscript").hidden = false;
+        document.getElementById("ceilingVoiceQuestion").hidden = true;
+        document.getElementById("ceilingVoiceFeedback").textContent = "";
+        document.getElementById("ceilingVoiceQuiz").classList.add("show");
+        addHint("기이한 소리: 야, 어머나, 이런, 안녕, 안녕, 안녕, 하하하, 앗… — 기이한 음성 속에서 한가지 품사로만 말하고 있군.");
+      }
+      function closeCeilingVoiceQuiz() {
+        document.getElementById("ceilingVoiceQuiz")?.classList.remove("show");
+      }
+      function showCeilingVoiceQuestion() {
+        document.getElementById("ceilingVoiceTranscript").hidden = true;
+        document.getElementById("ceilingVoiceQuestion").hidden = false;
+        document.getElementById("ceilingVoiceFeedback").textContent = "";
+      }
+      function checkCeilingVoiceAnswer(answer) {
+        const feedback = document.getElementById("ceilingVoiceFeedback");
+        if (answer !== "감탄사") {
+          feedback.textContent = "오답이다. 기이한 음성 속 단어들을 다시 살펴보자.";
+          return;
+        }
+        game.flags.ceilingQuizSolved = true;
+        game.flags.ceilingQuizAvailable = false;
+        closeCeilingVoiceQuiz();
+        document.getElementById("ceilingVoiceProblemBtn").style.display = "none";
+        addHint("기이한 음성에 사용된 단어의 품사는 감탄사이다.");
+        showDialog("기이한 소리가 멈추었다.");
+        window.setTimeout(() => {
+          game.flags.ceilingReady = true;
+          showDialog("천장을 살펴보자.");
+        }, 2400);
+      }
+      function openCeilingScene() {
+        if (!game.flags.ceilingReady) {
+          showDialog("지금은 천장에서 특별한 것이 보이지 않는다.");
+          return;
+        }
+        openScene("ceilingScene");
+        showDialog("천장에 가려져 있던 이상한 문장이 드러났다.");
+      }
+      function openMemoView(fromHint = false) {
+        const v = document.getElementById("memoView");
+        v.style.display = "block";
+        v.dataset.fromHint = String(fromHint);
+        document.getElementById("inlineQuestion").style.display = "none";
+        hidePronounWords();
+        setQuestionVisibility(true, false);
+        document.getElementById("problemOpenBtn").style.display = fromHint
+          ? "none"
+          : "block";
+      }
+      function closeMemoView() {
+        const v = document.getElementById("memoView");
+        const fromHint = v.dataset.fromHint === "true";
+        v.style.display = "none";
+        document.getElementById("inlineQuestion").style.display = "none";
+        hidePronounWords();
+        if (fromHint) {
+          document.getElementById("hintPopup").style.display = "block";
+          return;
+        }
+        showSceneWithoutCleanup("deskScene");
+      }
+      function showMemoQuestion() {
+        document.getElementById("problemOpenBtn").style.display = "none";
+        document.getElementById("inlineQuestion").style.display = "block";
+        const input = document.getElementById("answerInput");
+        const btn = document.getElementById("answerBtn");
+        input.value = "";
+        input.style.display = "inline-block";
+        btn.style.display = "inline-block";
+        if (game.flags.memoSolved) {
+          setQuestionVisibility(false, true);
+          input.style.display = "none";
+          btn.style.display = "none";
+          hidePronounWords();
+          return;
+        }
+        if (game.flags.memoQuestion1Solved) {
+          setQuestionVisibility(false, true);
+          showPronounWords();
+          return;
+        }
+        setQuestionVisibility(true, false);
+        hidePronounWords();
+        input.focus();
+      }
+      function setQuestionVisibility(q1, q2) {
+        document.getElementById("q1Box").hidden = !q1;
+        document.getElementById("q2Box").hidden = !q2;
+      }
+      function checkMemoAnswer() {
+        const a = document.getElementById("answerInput").value.trim();
+        if (a !== "대명사") {
+          showDialog("아직 아닌 것 같다. 문장 속 품사를 다시 살펴보자.");
+          return;
+        }
+        game.flags.memoQuestion1Solved = true;
+        setQuestionVisibility(false, true);
+        showPronounWords();
+        showDialog("맞았다. 이제 메모지에서 알맞은 대명사를 찾아보자.");
+      }
+      function showPronounWords() {
+        document
+          .querySelectorAll(".pronoun-word")
+          .forEach((w) => (w.style.display = "block"));
+      }
+      function hidePronounWords() {
+        document
+          .querySelectorAll(".pronoun-word")
+          .forEach((w) => (w.style.display = "none"));
+      }
+      function checkPronounWord(word) {
+        if (!game.flags.memoQuestion1Solved || game.flags.memoQuestion2Solved)
+          return;
+        if (word !== "우리") {
+          showDialog(
+            "그 단어도 대명사지만, 문제에서 묻는 일인칭 대명사는 아니다.",
+          );
+          return;
+        }
+        game.flags.memoQuestion2Solved = true;
+        game.flags.memoSolved = true;
+        game.flags.leftDrawerUnlocked = true;
+        document.getElementById("memoView").style.display = "none";
+        document.getElementById("inlineQuestion").style.display = "none";
+        hidePronounWords();
+        addHint("대명사는 몇 개일까?");
+        showSceneWithoutCleanup("deskScene");
+        showDialog("정답이다. 철컥... 서랍 잠금이 풀리는 소리가 들렸다.");
+      }
+      function updateDeskImage() {
+        const img = document.getElementById("deskImg");
+        const hs = document.getElementById("bookMemoHotspot");
+        if (game.flags.bookMemoTaken) {
+          img.src = "desk.png";
+          hs.style.display = "none";
+        } else {
+          img.src = "desk_note.png";
+          hs.style.display = "block";
+        }
+      }
+      function openBookMemoView() {
+        if (game.flags.bookMemoTaken) return;
+        document.getElementById("bookMemoView").style.display = "block";
+      }
+      function closeBookMemoView() {
+        document.getElementById("bookMemoView").style.display = "none";
+        showSceneWithoutCleanup("deskScene");
+      }
+      function takeBookMemo() {
+        if (game.flags.bookMemoTaken) return;
+        game.flags.bookMemoTaken = true;
+        game.inventory.bookMemo = true;
+        document.getElementById("bookMemoView").style.display = "none";
+        updateDeskImage();
+        updateLeftDrawer();
+        renderInventory();
+        showSceneWithoutCleanup("deskScene");
+        showDialog("찢어진 메모지를 인벤토리에 보관했다.");
+      }
+      function openLeftDrawerScene() {
+        openScene("leftDrawerScene");
+        if (!game.flags.leftDrawerUnlocked) showDialog("잠겨있다...");
+      }
+      function getLeftDrawerImageName() {
+        const s = game.flags.bookMemoTaken ? "" : "_note";
+        if (!game.flags.leftDrawerUnlocked) return `drawer_lockde_key${s}.png`;
+        if (!game.flags.keyTaken) return `drawer_open_key${s}.png`;
+        return `drawer_open_nothing${s}.png`;
+      }
+      function updateLeftDrawer() {
+        const img = document.getElementById("leftDrawerImg");
+        const hs = document.getElementById("keyHotspot");
+        img.src = getLeftDrawerImageName();
+        hs.style.display =
+          game.flags.leftDrawerUnlocked && !game.flags.keyTaken
+            ? "block"
+            : "none";
+      }
+      function takeKey() {
+        if (!game.flags.leftDrawerUnlocked || game.flags.keyTaken) return;
+        game.flags.keyTaken = true;
+        game.inventory.key = true;
+        updateLeftDrawer();
+        renderInventory();
+        showDialog("열쇠를 얻었다. 인벤토리에 보관했다.");
+      }
+      function checkCenterDrawer() {
+        if (game.flags.centerDrawerOpened) {
+          openScene("centerDrawerScene");
+          return;
+        }
+        showDialog("열쇠가 필요하다...");
+      }
+      function updateCenterDrawer() {
+        const img = document.getElementById("centerDrawerImg");
+        const hs = document.getElementById("flashlightHotspot");
+        if (!game.flags.centerDrawerOpened) return;
+        if (game.flags.flashlightTaken) {
+          img.src = "drawer_open_flash_nothing.png";
+          hs.style.display = "none";
+        } else {
+          img.src = "drawer_open.png";
+          hs.style.display = "block";
+        }
+      }
+      function takeFlashlight() {
+        if (!game.flags.centerDrawerOpened || game.flags.flashlightTaken)
+          return;
+        game.flags.flashlightTaken = true;
+        game.inventory.flashlight = true;
+        updateCenterDrawer();
+        renderInventory();
+        showDialog("전구가 없는 손전등을 얻었다. 인벤토리에 보관했다.");
+      }
+      function renderInventory() {
+        const slots = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => document.getElementById(`slot${n}`));
+        slots.forEach((slot) => {
+          slot.innerHTML = "";
+          slot.classList.remove("has-item");
+        });
+
+        if (game.inventory.key) {
+          slots[0].innerHTML = '<span class="inventory-item" onpointerdown="startDragItem(event, \'key\')" aria-label="열쇠">🗝️</span>';
+          slots[0].classList.add("has-item");
+        }
+        if (game.inventory.flashlight) {
+          slots[1].innerHTML = '<span class="inventory-flashlight" onclick="openFlashlightView(\'normal\')" title="클릭하여 전구가 없는 손전등 보기" aria-label="전구가 없는 손전등">🔦</span>';
+          slots[1].classList.add("has-item");
+        }
+        if (game.inventory.blueFlashlight) {
+          slots[1].innerHTML = '<span class="blue-flashlight-icon" onpointerdown="startDragItem(event, \'blueFlashlight\')" onclick="if(!game.suppressInventoryClick) openFlashlightView(\'blue\')" title="클릭하여 파란 손전등 보기 · 드래그하여 사용" aria-label="파란 손전등">🔦</span>';
+          slots[1].classList.add("has-item");
+        }
+        if (game.inventory.bookMemo) {
+          slots[2].innerHTML = '<div class="torn-note-icon" title="153쪽 7줄">153쪽<br>7줄</div>';
+          slots[2].classList.add("has-item");
+        }
+        if (game.inventory.magnifier) {
+          slots[3].innerHTML = '<span class="magnifier-icon" onpointerdown="startDragItem(event, \'magnifier\')" title="돋보기" aria-label="돋보기">🔎</span>';
+          slots[3].classList.add("has-item");
+        }
+        if (game.inventory.hammer) {
+          slots[4].innerHTML = '<span class="hammer-icon" onpointerdown="startDragItem(event, \'hammer\')" title="망치" aria-label="망치">🔨</span>';
+          slots[4].classList.add("has-item");
+        }
+        if (game.inventory.blueBulb) {
+          slots[5].innerHTML = '<img class="blue-bulb-thumb" src="bluebulb.png" onpointerdown="startDragItem(event, \'blueBulb\')" alt="파란 전구">';
+          slots[5].classList.add("has-item");
+        }
+
+        const isEmpty = !game.inventory.key &&
+          !game.inventory.flashlight &&
+          !game.inventory.bookMemo &&
+          !game.inventory.magnifier &&
+          !game.inventory.hammer &&
+          !game.inventory.blueBulb &&
+          !game.inventory.blueFlashlight;
+        if (isEmpty) slots[0].textContent = "비어 있음";
+      }
+
+      function openFlashlightView(type) {
+        const view = document.getElementById("flashlightView");
+        const image = document.getElementById("flashlightViewImg");
+        if (!view || !image) return;
+        const isBlue = type === "blue";
+        image.src = isBlue ? "blueflash.png" : "flashlight.png";
+        image.alt = isBlue ? "파란 전구와 결합된 손전등 확대 이미지" : "전구가 없는 손전등 확대 이미지";
+        closePopup("inventoryPopup");
+        view.classList.add("show");
+      }
+
+      function closeFlashlightView() {
+        document.getElementById("flashlightView")?.classList.remove("show");
+      }
+
+      function startDragItem(e, item) {
+        if (item === "key" && !game.inventory.key) return;
+        if (item === "magnifier" && !game.inventory.magnifier) return;
+        if (item === "hammer" && !game.inventory.hammer) return;
+        if (item === "blueBulb" && !game.inventory.blueBulb) return;
+        if (item === "blueFlashlight" && !game.inventory.blueFlashlight) return;
+        game.draggingItem = item;
+        game.dragStartX = e.clientX;
+        game.dragStartY = e.clientY;
+        game.dragMoved = false;
+        game.dragGhost = document.createElement("div");
+        game.dragGhost.className = "drag-ghost";
+        game.dragGhost.textContent = item === "key" ? "🗝️" : item === "magnifier" ? "🔎" : item === "hammer" ? "🔨" : item === "blueBulb" ? "💡" : item === "blueFlashlight" ? "🔦" : "";
+        document.body.appendChild(game.dragGhost);
+        moveDragGhost(e.clientX, e.clientY);
+        document.addEventListener("pointermove", dragMove);
+        document.addEventListener("pointerup", dragEnd, { once: true });
+        e.preventDefault();
+      }
+      function dragMove(e) {
+        if (Math.hypot(e.clientX - game.dragStartX, e.clientY - game.dragStartY) > 10) game.dragMoved = true;
+        moveDragGhost(e.clientX, e.clientY);
+      }
+      function moveDragGhost(x, y) {
+        if (!game.dragGhost) return;
+        game.dragGhost.style.left = `${x}px`;
+        game.dragGhost.style.top = `${y}px`;
+      }
+      function dragEnd(e) {
+        document.removeEventListener("pointermove", dragMove);
+        const wasMoved = game.dragMoved;
+        if (wasMoved) {
+          game.suppressInventoryClick = true;
+          setTimeout(() => { game.suppressInventoryClick = false; }, 0);
+        }
+        if (!wasMoved) {
+          game.dragGhost?.remove();
+          game.dragGhost = null;
+          game.draggingItem = null;
+          return;
+        }
+        if (game.draggingItem === "key")
+          tryUseKeyOnCenterDrawer(e.clientX, e.clientY);
+        if (game.draggingItem === "magnifier") {
+          const handledByPainting = tryUseMagnifierOnPainting(e.clientX, e.clientY);
+          if (!handledByPainting) tryUseMagnifierOnSpider(e.clientX, e.clientY);
+        }
+        if (game.draggingItem === "hammer")
+          tryUseHammerOnWall(e.clientX, e.clientY);
+        if (game.draggingItem === "blueBulb")
+          tryCombineBlueBulb(e.clientX, e.clientY);
+        if (game.draggingItem === "blueFlashlight")
+          tryUseBlueFlashlightOnWall(e.clientX, e.clientY);
+        game.dragGhost?.remove();
+        game.dragGhost = null;
+        game.draggingItem = null;
+      }
+      function tryUseKeyOnCenterDrawer(x, y) {
+        if (game.currentScene !== "deskScene") {
+          showDialog("책상 화면에서 사용해야 할 것 같다.");
+          return;
+        }
+        if (!game.inventory.key) {
+          showDialog("열쇠가 없다.");
+          return;
+        }
+        const r = document
+          .getElementById("deskKeyholeHotspot")
+          .getBoundingClientRect();
+        const ok = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+        if (!ok) {
+          showDialog("여기에는 사용할 수 없다.");
+          return;
+        }
+        game.flags.centerDrawerOpened = true;
+        game.inventory.key = false;
+        renderInventory();
+        openScene("centerDrawerScene");
+        showDialog("철컥... 가운데 서랍이 열렸다.");
+      }
+
+      function inspectSmallSpider() {
+        if (!game.inventory.magnifier) {
+          showDialog("너무 작아서 등에 있는 글자가 보이지 않는다. 확대할 물건이 필요하다.");
+          return;
+        }
+        showDialog("돋보기를 거미 위로 끌어다 놓아 보자.");
+      }
+
+      function tryUseMagnifierOnSpider(x, y) {
+        if (game.currentScene !== "roomScene") {
+          showDialog("작은 것을 자세히 살펴볼 때 사용해야 할 것 같다.");
+          return;
+        }
+        const target = document.getElementById("spiderMagnifierTarget");
+        const r = target.getBoundingClientRect();
+        const ok = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+        if (!ok) {
+          showDialog("돋보기를 작은 거미 위에 정확히 놓아 보자.");
+          return;
+        }
+        openScene("spiderScene");
+        showDialog("돋보기 너머로 거미의 등에 새겨진 글자가 선명하게 보인다.");
+      }
+
+      function openSpiderQuiz() {
+        const panel = document.getElementById("spiderQuizPanel");
+        panel.classList.add("show");
+        updateSpiderQuizUI();
+        if (!game.flags.spiderClueFound) document.getElementById("spiderQuizAnswer").focus();
+      }
+
+      function closeSpiderQuiz() {
+        document.getElementById("spiderQuizPanel").classList.remove("show");
+      }
+
+      function updateSpiderQuizUI() {
+        const solved = game.flags.spiderClueFound;
+        const input = document.getElementById("spiderQuizAnswer");
+        const feedback = document.getElementById("spiderQuizFeedback");
+        const button = document.getElementById("spiderProblemBtn");
+        input.disabled = solved;
+        if (solved) {
+          input.value = "수사";
+          feedback.className = "correct";
+          feedback.innerHTML = '<strong>정답입니다.</strong><br><span>X의 고유 번호는 거미 등의 식과 관련된 거 같아.</span>';
+          button.textContent = "문제 확인";
+        } else {
+          feedback.textContent = "";
+          feedback.className = "";
+          button.textContent = "문제 보기";
+        }
+      }
+
+      function checkSpiderQuizAnswer() {
+        if (game.flags.spiderClueFound) return;
+        const input = document.getElementById("spiderQuizAnswer");
+        const feedback = document.getElementById("spiderQuizFeedback");
+        if (input.value.trim().replace(/\s+/g, "") !== "수사") {
+          feedback.className = "wrong";
+          feedback.textContent = "오답입니다. 다시 생각해 보자. 체언에 속하는 품사를 써야 한다.";
+          input.select();
+          return;
+        }
+        game.flags.spiderClueFound = true;
+        const hint = "X의 고유 번호는 거미 등의 식과 관련된 거 같아.";
+        addHint(hint);
+        updateSpiderQuizUI();
+        showDialog(hint);
+      }
+
+      function updateSpiderVisibility() {
+        const spider = document.getElementById("spiderMagnifierTarget");
+        if (!spider) return;
+        spider.classList.toggle("memo-clue-active", game.flags.dresserMemoBurned);
+      }
+
+      function openWallScene() {
+        openScene("wallScene");
+        showDialog("벽에 화살표가 있는데?");
+      }
+
+      function followWallArrow(index, button) {
+        if (game.flags.wallBroken) return;
+        if (index < game.flags.wallArrowsFound) return;
+        if (index !== game.flags.wallArrowsFound) {
+          showDialog("화살표를 처음부터 차례대로 따라가 보자.");
+          return;
+        }
+        button.classList.add("found");
+        game.flags.wallArrowsFound += 1;
+        if (game.flags.wallArrowsFound === 5) {
+          game.flags.looseBrickFound = true;
+          updateWallScene();
+          showDialog("마지막 화살표가 벽돌 한 장을 가리키고 있다.");
+        }
+      }
+
+      function chooseDecoyArrow(button) {
+        button.classList.add("wrong");
+        setTimeout(() => button.classList.remove("wrong"), 420);
+        showDialog("이 화살표가 향하는 곳에는 다음 단서가 없다. 다른 방향을 따라가 보자.");
+      }
+
+      function inspectLooseBrick() {
+        if (!game.flags.looseBrickFound || game.flags.wallBroken) return;
+        showDialog("여기 벽돌이 덜그덕거리는데, 손으로 뺄수는 없겠는걸?");
+      }
+
+      function updateWallScene() {
+        const arrows = [...document.querySelectorAll("#wallScene .wall-arrow.correct")];
+        arrows.forEach((arrow, index) => arrow.classList.toggle("found", index < game.flags.wallArrowsFound));
+        const target = document.getElementById("looseBrickTarget");
+        const hole = document.getElementById("wallHole");
+        const bulb = document.getElementById("wallBulb");
+        target.style.display = game.flags.looseBrickFound && !game.flags.wallBroken ? "block" : "none";
+        hole.style.display = game.flags.wallBroken ? "block" : "none";
+        bulb.style.display = game.flags.wallBroken && !game.flags.blueBulbTaken ? "block" : "none";
+      }
+
+      function tryUseHammerOnWall(x, y) {
+        if (game.currentScene !== "wallScene") {
+          showDialog("망치로 두드릴 만한 곳을 먼저 찾아야 한다.");
+          return;
+        }
+        if (!game.flags.looseBrickFound) {
+          showDialog("화살표가 가리키는 곳을 먼저 찾아보자.");
+          return;
+        }
+        if (game.flags.wallBroken) {
+          showDialog("이미 벽돌을 빼냈다.");
+          return;
+        }
+        const r = document.getElementById("looseBrickTarget").getBoundingClientRect();
+        const ok = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+        if (!ok) {
+          showDialog("망치를 덜그덕거리는 벽돌에 정확히 놓아 보자.");
+          return;
+        }
+        game.flags.wallBroken = true;
+        updateWallScene();
+        showDialog("쾅! 벽돌이 빠지며 안쪽에 파란빛이 드러났다.");
+      }
+
+      function takeBlueBulb() {
+        if (!game.flags.wallBroken || game.flags.blueBulbTaken) return;
+        game.flags.blueBulbTaken = true;
+        game.inventory.blueBulb = true;
+        updateWallScene();
+        renderInventory();
+        showDialogSequence([
+          "파란 전구를 획득했다.",
+          "전구가 없는 손전등이 있었는데...",
+          "전구를 손전등에 끼워볼까?",
+        ]);
+      }
+
+      function tryCombineBlueBulb(x, y) {
+        if (!game.inventory.blueBulb) return;
+        if (!game.inventory.flashlight) {
+          showDialog("전구를 끼울 손전등이 없다.");
+          return;
+        }
+        const r = document.getElementById("slot2").getBoundingClientRect();
+        const ok = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+        if (!ok) {
+          showDialog("파란 전구를 전구가 없는 손전등 위에 놓아 보자.");
+          return;
+        }
+        game.flags.blueFlashlightMade = true;
+        game.inventory.blueBulb = false;
+        game.inventory.flashlight = false;
+        game.inventory.blueFlashlight = true;
+        renderInventory();
+        showDialogSequence([
+          "파란 전구가 손전등에 꼭 맞게 끼워졌다.",
+          "이 손전등은 어떻게 쓰라는 거지? 벽을 비춰볼까?",
+        ]);
+      }
+
+      function tryUseBlueFlashlightOnWall(x, y) {
+        if (!game.inventory.blueFlashlight) return;
+        if (game.currentScene !== "wallScene") {
+          showDialog("왼쪽 벽을 확대해서 비춰 보자.");
+          return;
+        }
+        const r = document.getElementById("wallScene").getBoundingClientRect();
+        const ok = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+        if (!ok) {
+          showDialog("파란 손전등을 벽 위에 놓아 보자.");
+          return;
+        }
+        game.flags.hiddenWallRevealed = true;
+        openScene("hiddenWallScene");
+        showDialog("파란빛 아래에서 보이지 않던 문장이 나타났다.");
+      }
+
+      function openHiddenWallQuiz() {
+        document.getElementById("hiddenWallQuiz").classList.add("show");
+        updateHiddenWallQuiz();
+      }
+
+      function closeHiddenWallQuiz() {
+        document.getElementById("hiddenWallQuiz").classList.remove("show");
+      }
+
+      function updateHiddenWallQuiz() {
+        const solved = game.flags.hiddenWallQuizSolved;
+        const feedback = document.getElementById("hiddenWallFeedback");
+        document.querySelectorAll("#hiddenWallQuiz .hidden-wall-choices button").forEach((button) => {
+          button.disabled = solved;
+        });
+        if (solved) {
+          feedback.className = "correct";
+          feedback.innerHTML = '<strong>정답입니다.</strong> <span>문장에서 숫자와 관련된 단어는 하나뿐이군.</span>';
+        } else {
+          feedback.textContent = "";
+          feedback.className = "";
+        }
+      }
+
+      function checkHiddenWallAnswer(answer) {
+        if (game.flags.hiddenWallQuizSolved) return;
+        const feedback = document.getElementById("hiddenWallFeedback");
+        if (answer !== "오르내리다") {
+          feedback.className = "wrong";
+          feedback.textContent = "오답입니다. 다시 생각해 보자.";
+          return;
+        }
+        game.flags.hiddenWallQuizSolved = true;
+        addHint("‘들어간다’의 고유 번호는 문장 속에 있다.");
+        updateHiddenWallQuiz();
+        showDialog("문장에서 숫자와 관련된 단어는 하나뿐이군.");
+      }
+
+      /* 왼쪽 벽 아래 서랍장 */
+      const DRESSER_PASSWORD_LENGTH = 4;
+      const DRESSER_PASSWORD = "8734";
+
+      function updateDresserMain() {
+        const image = document.getElementById("dresserMainImg");
+        if (image) image.src = "dresser.png";
+      }
+
+      function openDresserDrawer(drawerName) {
+        game.currentDresserDrawer = drawerName;
+        if (drawerName === "first") game.flags.dresserFirstOpened = true;
+        if (drawerName === "second") game.flags.dresserSecondOpened = true;
+        if (drawerName === "third") game.flags.dresserThirdOpened = true;
+        openScene("dresserDrawerScene");
+      }
+
+      function updateDresserDrawer() {
+        const image = document.getElementById("dresserDrawerImg");
+        const magnifier = document.getElementById("dresserMagnifierHotspot");
+        const hammer = document.getElementById("dresserHammerHotspot");
+        magnifier.style.display = "none";
+        hammer.style.display = "none";
+
+        if (game.currentDresserDrawer === "first") {
+          if (game.flags.dresserMagnifierTaken) {
+            image.src = "dresser_frist_open.png";
+          } else {
+            image.src = "dresser_first_open_magnifier.png";
+            magnifier.style.display = "block";
+          }
+          return;
+        }
+
+        if (game.currentDresserDrawer === "second") {
+          image.src = "dresser_second_open.png";
+          return;
+        }
+
+        if (game.currentDresserDrawer === "third") {
+          if (game.flags.dresserHammerTaken) {
+            image.src = "dresser_third_open_nothing.png";
+          } else {
+            image.src = "dresser_third_open.png";
+            hammer.style.display = "block";
+          }
+        }
+      }
+
+      function takeMagnifier() {
+        if (game.currentDresserDrawer !== "first" || game.flags.dresserMagnifierTaken) return;
+        game.flags.dresserMagnifierTaken = true;
+        game.inventory.magnifier = true;
+        updateDresserDrawer();
+        renderInventory();
+        showDialog("돋보기를 얻었다. 인벤토리에 보관했다.");
+      }
+
+      function takeHammer() {
+        if (game.currentDresserDrawer !== "third" || game.flags.dresserHammerTaken) return;
+        game.flags.dresserHammerTaken = true;
+        game.inventory.hammer = true;
+        updateDresserDrawer();
+        renderInventory();
+        showDialog("망치를 얻었다. 인벤토리에 보관했다.");
+      }
+
+      function openDresserPassword() {
+        openScene("dresserPasswordScene");
+        if (game.flags.dresserPasswordOpened) showDialog("이미 열린 서랍이다.");
+      }
+
+      function updateDresserPasswordScene() {
+        const image = document.getElementById("dresserPasswordImg");
+        const panel = document.getElementById("dresserPasswordPanel");
+        const memo = document.getElementById("dresserBurnMemo");
+        if (game.flags.dresserPasswordOpened) {
+          image.src = "dresser_first_password_open_nothing.png";
+          panel.style.display = "none";
+          memo.style.display = game.flags.dresserMemoBurned ? "none" : "block";
+        } else {
+          image.src = "dresser_first_password.png";
+          panel.style.display = "block";
+          memo.style.display = "none";
+          updateDresserPasswordDisplay();
+        }
+      }
+
+      function pressDresserNumber(number) {
+        if (game.flags.dresserPasswordOpened || game.dresserPasswordInput.length >= DRESSER_PASSWORD_LENGTH) return;
+        game.dresserPasswordInput += number;
+        document.getElementById("dresserPasswordFeedback").textContent = "";
+        updateDresserPasswordDisplay();
+      }
+
+      function clearDresserPassword() {
+        game.dresserPasswordInput = "";
+        document.getElementById("dresserPasswordFeedback").textContent = "";
+        updateDresserPasswordDisplay();
+      }
+
+      function updateDresserPasswordDisplay() {
+        const display = document.getElementById("dresserPasswordDisplay");
+        const entered = game.dresserPasswordInput.split("").map(() => "●");
+        const empty = Array(Math.max(0, DRESSER_PASSWORD_LENGTH - entered.length)).fill("_");
+        display.textContent = [...entered, ...empty].join(" ");
+      }
+
+      function submitDresserPassword() {
+        const feedback = document.getElementById("dresserPasswordFeedback");
+        if (game.dresserPasswordInput.length !== DRESSER_PASSWORD_LENGTH) {
+          feedback.textContent = `${DRESSER_PASSWORD_LENGTH}자리 숫자를 모두 입력해야 한다.`;
+          return;
+        }
+        if (game.dresserPasswordInput !== DRESSER_PASSWORD) {
+          feedback.textContent = "비밀번호가 맞지 않는다. 문제를 다시 살펴보자.";
+          game.dresserPasswordInput = "";
+          updateDresserPasswordDisplay();
+          return;
+        }
+        game.flags.dresserPasswordOpened = true;
+        game.dresserPasswordInput = "";
+        updateDresserPasswordScene();
+        showDialog("삐빅... 철컥! 비밀번호 서랍이 열렸다.");
+      }
+
+      function readDresserMemo() {
+        if (!game.flags.dresserPasswordOpened || game.flags.dresserMemoBurned) return;
+        const modal = document.getElementById("dresserMemoModal");
+        const paper = document.getElementById("dresserMemoPaper");
+        modal.classList.add("show");
+        paper.classList.remove("burn");
+        void paper.offsetWidth;
+        setTimeout(() => paper.classList.add("burn"), 1250);
+        setTimeout(() => {
+          game.flags.dresserMemoBurned = true;
+          updateSpiderVisibility();
+          modal.classList.remove("show");
+          paper.classList.remove("burn");
+          updateDresserPasswordScene();
+          showDialog("쪽지에 불길이 번지더니 재가 되어 사라졌다...");
+        }, 4100);
+      }
+
+      function openDresserQuestion() {
+        document.getElementById("dresserQuestionModal").classList.add("show");
+      }
+
+      function closeDresserQuestion() {
+        document.getElementById("dresserQuestionModal").classList.remove("show");
+      }
+
+
+      const bookEventData = {
+        animal: {
+          symbol: "🐈‍⬛",
+          text: "책장 안쪽에서 작은 그림자가 빠르게 지나갔다...",
+        },
+        1984: {
+          symbol: "👁️",
+          text: "누군가 이쪽을 지켜보는 것 같은 기분이 든다...",
+        },
+        demian: {
+          symbol: "🪶",
+          text: "검은 새의 깃털이 눈앞에 잠깐 떠올랐다.",
+          flash: true,
+        },
+        prince: { symbol: "✨", text: "작은 별빛이 책 주변에서 반짝였다." },
+        threeKingdoms: {
+          symbol: "⚔️",
+          text: "멀리서 쇠붙이가 맞부딪히는 듯한 소리가 났다.",
+          flash: true,
+        },
+        sherlock: {
+          symbol: "🔎",
+          text: "돋보기 모양이 떠올랐다. 이 책에는 단서가 있을지도 모른다.",
+        },
+        mockingbird: {
+          symbol: "🪶",
+          text: "가벼운 깃털 하나가 천천히 떨어지는 듯하다.",
+        },
+        pride: {
+          symbol: "🖼️",
+          text: "오래된 초상화가 잠깐 이쪽을 바라본 것 같다.",
+        },
+        lesmis: {
+          symbol: "📕",
+          text: "무거운 책이다. 지금은 특별한 반응이 없다.",
+        },
+        gatsby: {
+          symbol: "🌟",
+          text: "금빛 불빛이 잠깐 책등을 훑고 지나갔다.",
+        },
+        catcher: {
+          symbol: "🌾",
+          text: "바람에 흔들리는 들판 소리가 아주 작게 들린다.",
+        },
+        potter: {
+          symbol: "⚡",
+          text: "푸른 섬광이 짧게 번쩍였다.",
+          flash: true,
+        },
+      };
+      function triggerBookEvent(id) {
+        if (id === "korean") {
+          openScene("bookScene");
+          return;
+        }
+        const d = bookEventData[id];
+        if (!d) {
+          showDialog("아무 반응도 없다.");
+          return;
+        }
+        if (game.bookEventsSeen[id]) {
+          showDialog("이미 살펴본 책이다.");
+          return;
+        }
+        game.bookEventsSeen[id] = true;
+        if (d.flash) {
+          flashScreen();
+          setTimeout(() => showBookEffect(d), 420);
+        } else showBookEffect(d);
+      }
+      function showBookEffect({ symbol, text }) {
+        document.getElementById("effectSymbol").textContent = symbol;
+        document.getElementById("scareText").textContent = text;
+        document.getElementById("scareOverlay").classList.add("show");
+        clearTimeout(window.bookEffectTimer);
+        window.bookEffectTimer = setTimeout(closeBookEffect, 1900);
+      }
+      function closeBookEffect() {
+        document.getElementById("scareOverlay").classList.remove("show");
+        clearTimeout(window.bookEffectTimer);
+      }
+      function flashScreen() {
+        const s = document.getElementById("stage");
+        s.classList.remove("light-flash");
+        void s.offsetWidth;
+        s.classList.add("light-flash");
+        setTimeout(() => s.classList.remove("light-flash"), 470);
+      }
+      function addHint(t) {
+        if (!game.hints.includes(t)) game.hints.push(t);
+        renderHints();
+      }
+      function renderHints() {
+        const el = document.getElementById("hintText");
+        if (game.hints.length === 0) {
+          el.innerHTML = "아직 모은 힌트가 없다.";
+          return;
+        }
+
+        const pronounHintText = "대명사는 몇 개일까?";
+        const bookHintText =
+          "두 문제를 모두 해결했다. 153쪽 7번째 줄에서 사용된 조사의 개수를 기억하자.";
+        const spiderHintText = "X의 고유 번호는 거미 등의 식과 관련된 거 같아.";
+        const hiddenWallHintText = "‘들어간다’의 고유 번호는 문장 속에 있다.";
+        const ceilingHintText =
+          "기이한 소리: 야, 어머나, 이런, 안녕, 안녕, 안녕, 하하하, 앗… — 기이한 음성 속에서 한가지 품사로만 말하고 있군.";
+
+        // game.hints에 추가된 순서를 그대로 사용하므로 학생이 획득한 순서대로 번호가 매겨진다.
+        el.innerHTML = game.hints
+          .map((hint, index) => {
+            const hintTextClass = "";
+            const memoControl =
+              hint === pronounHintText
+                ? `<div class="book-hint-record">
+                    <button
+                      id="pronounMemoContentBtn"
+                      type="button"
+                      class="memo-view-btn"
+                      onclick="togglePronounMemoContent()"
+                    >메모 내용 보기</button>
+                    <p id="pronounMemoContent" class="book-hint-sentence" hidden>
+                      그가 우리를 잡고 나의 눈을 보며 이것을 그곳으로 치워달라고 애원했다.
+                    </p>
+                  </div>`
+                : "";
+
+            const sentenceControl =
+              game.flags.bookQuizSolved && hint === bookHintText
+                ? `<div class="book-hint-record">
+                    <button
+                      id="bookHintSentenceBtn"
+                      type="button"
+                      class="memo-view-btn"
+                      onclick="toggleBookHintSentence()"
+                    >문장 보기</button>
+                    <p id="bookHintSentence" class="book-hint-sentence" hidden>
+                      두더지는 숨을 고르고 하나, 둘, 셋을 세었다.
+                    </p>
+                  </div>`
+                : "";
+
+            const spiderControl =
+              hint === spiderHintText
+                ? `<div class="book-hint-record">
+                    <button
+                      type="button"
+                      class="memo-view-btn"
+                      onclick="openSpiderHintPhoto()"
+                    >거미 사진 보기</button>
+                  </div>`
+                : "";
+
+            const hiddenWallControl =
+              hint === hiddenWallHintText
+                ? `<div class="book-hint-record">
+                    <button
+                      id="hiddenWallSentenceBtn"
+                      type="button"
+                      class="memo-view-btn"
+                      onclick="toggleHiddenWallSentence()"
+                    >문장 보기</button>
+                    <p id="hiddenWallSentence" class="book-hint-sentence" hidden>
+                      한 사람이 방으로 들어간다
+                    </p>
+                  </div>`
+                : "";
+
+            return `<div class="hint-record">
+              <div class="hint-record-main">
+                <span class="hint-number" aria-hidden="true">${index + 1}</span>
+                <p${hintTextClass}>${escapeHtml(hint)}</p>
+              </div>
+              ${memoControl}
+              ${sentenceControl}
+              ${spiderControl}
+              ${hiddenWallControl}
+            </div>`;
+          })
+          .join("");
+      }
+
+      function toggleBookHintSentence() {
+        const sentence = document.getElementById("bookHintSentence");
+        const button = document.getElementById("bookHintSentenceBtn");
+        if (!sentence || !button) return;
+
+        const shouldShow = sentence.hidden;
+        sentence.hidden = !shouldShow;
+        button.textContent = shouldShow ? "문장 닫기" : "문장 보기";
+      }
+
+      function togglePronounMemoContent() {
+        const memo = document.getElementById("pronounMemoContent");
+        const button = document.getElementById("pronounMemoContentBtn");
+        if (!memo || !button) return;
+
+        const shouldShow = memo.hidden;
+        memo.hidden = !shouldShow;
+        button.textContent = shouldShow ? "메모 닫기" : "메모 내용 보기";
+      }
+
+      function openSpiderHintPhoto() {
+        document.getElementById("hintPopup").style.display = "none";
+        document.getElementById("spiderHintView").style.display = "block";
+      }
+
+      function closeSpiderHintPhoto() {
+        document.getElementById("spiderHintView").style.display = "none";
+        document.getElementById("hintPopup").style.display = "block";
+      }
+
+      function toggleHiddenWallSentence() {
+        const sentence = document.getElementById("hiddenWallSentence");
+        const button = document.getElementById("hiddenWallSentenceBtn");
+        if (!sentence || !button) return;
+
+        const shouldShow = sentence.hidden;
+        sentence.hidden = !shouldShow;
+        button.textContent = shouldShow ? "문장 닫기" : "문장 보기";
+      }
+      function checkDoor() {
+        showDialog("아직 철문을 열 수 없다.");
+      }
+      function openDoorScene() {
+        openScene("doorScene");
+        showDialog("육중한 철문이다. 문 한가운데 낡은 금속판이 붙어 있다.");
+      }
+      function openDoorNoteScene() {
+        openScene("doorNoteScene");
+        showDialog("금속판에 새겨진 문장이 마지막 비밀번호를 가리키는 것 같다.");
+      }
+      function openDoorDialScene() {
+        openScene("doorDialScene");
+        renderDoorDial();
+        showDialog("다이얼을 위아래로 돌려 네 자리 비밀번호를 맞추자.");
+      }
+      function renderDoorDial() {
+        document.querySelectorAll(".dial-wheel-control").forEach((wheel, index) => {
+          const number = wheel.querySelector(".dial-number");
+          if (number) number.textContent = game.doorDial[index];
+        });
+      }
+      function rotateDoorDial(index, direction) {
+        if (game.escapedAt) return;
+        game.doorDial[index] = (game.doorDial[index] + direction + 10) % 10;
+        const number = document.querySelector(`.dial-wheel-control[data-index="${index}"] .dial-number`);
+        if (!number) return;
+        number.classList.remove("roll-up", "roll-down");
+        void number.offsetWidth;
+        number.textContent = game.doorDial[index];
+        number.classList.add(direction > 0 ? "roll-up" : "roll-down");
+        if (navigator.vibrate) navigator.vibrate(18);
+      }
+      function showDialFeedback(message, correct = false) {
+        const feedback = document.getElementById("dialFeedback");
+        feedback.textContent = message;
+        feedback.classList.toggle("correct", correct);
+        feedback.classList.add("show");
+        clearTimeout(window.dialFeedbackTimer);
+        window.dialFeedbackTimer = setTimeout(() => feedback.classList.remove("show"), 1800);
+      }
+      function checkDoorDial() {
+        if (game.doorDial.join("") !== "7861") {
+          showDialFeedback("철컥… 비밀번호가 맞지 않는다.");
+          document.getElementById("doorDialScene").animate(
+            [{ transform: "translateX(0)" }, { transform: "translateX(-7px)" }, { transform: "translateX(7px)" }, { transform: "translateX(0)" }],
+            { duration: 260 },
+          );
+          return;
+        }
+        showDialFeedback("철컥! 잠금이 풀렸다.", true);
+        game.escapedAt = Date.now();
+        setTimeout(() => {
+          showSceneWithoutCleanup("doorOpeningScene");
+          setTimeout(showEscapeSuccess, 2250);
+        }, 650);
+      }
+      function formatElapsed(milliseconds) {
+        const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        return hours > 0
+          ? `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+          : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+      }
+      function showEscapeSuccess() {
+        const success = document.getElementById("escapeSuccess");
+        document.getElementById("escapeElapsed").textContent = formatElapsed(game.escapedAt - game.startedAt);
+        document.getElementById("escapeFinishedAt").textContent = `탈출 완료: ${new Date(game.escapedAt).toLocaleString("ko-KR")}`;
+        success.style.display = "grid";
+        requestAnimationFrame(() => success.classList.add("show"));
+      }
+      function togglePopup(id) {
+        const p = document.getElementById(id);
+        const other = id === "inventoryPopup" ? "hintPopup" : "inventoryPopup";
+        closePopup(other);
+        p.style.display = p.style.display === "block" ? "none" : "block";
+      }
+      function closePopup(id) {
+        const p = document.getElementById(id);
+        if (p) p.style.display = "none";
+      }
+      function showDialog(t) {
+        const d = document.getElementById("dialog");
+        d.classList.remove("blue-hint");
+        d.textContent = t;
+        d.style.display = "block";
+        clearTimeout(window.dialogTimer);
+        window.dialogTimer = setTimeout(() => (d.style.display = "none"), 2200);
+      }
+      function showBlueDialog(t) {
+        showDialog(t);
+        document.getElementById("dialog").classList.add("blue-hint");
+      }
+      function showDialogSequence(messages) {
+        (window.dialogSequenceTimers || []).forEach(clearTimeout);
+        window.dialogSequenceTimers = messages.map((message, index) =>
+          setTimeout(() => showDialog(message), index * 2400),
+        );
+      }
+      function showSceneWithoutCleanup(id) {
+        const t = document.getElementById(id);
+        if (!t) return;
+        game.currentScene = id;
+        document
+          .querySelectorAll(".scene")
+          .forEach((s) => s.classList.remove("active"));
+        t.classList.add("active");
+        if (id === "deskScene") updateDeskImage();
+      }
+      function escapeHtml(t) {
+        return String(t).replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#039;",
+            })[c],
+        );
+      }
+      renderInventory();
+      renderHints();
+      updateDeskImage();
+      updateLeftDrawer();
+    </script>
+
+    <script>
+      // @ts-nocheck
+      const embeddedBookPageData = {
+        147: `<div class="line" data-line="1">지하실 주변에는 정체를 알 수 없는 장비 상자들이 쌓여 있었다.</div><div class="line" data-line="2">최 기자는 그제야 두더지라는 별명의 이유를 이해했다.</div><div class="line" data-line="3">그는 오래전부터 땅굴을 파는 기계를 만들고 있었다.</div><div class="line" data-line="4">목표는 일반인의 접근이 금지된 비밀 구역이었다.</div><div class="line" data-line="5">그곳에는 외계인과 관련된 소문이 끊이지 않았다.</div><div class="line" data-line="6">공치는 낡은 탁자 위에 위성사진을 펼쳐 놓았다.</div><div class="line" data-line="7">희미한 윤곽 속에 중앙 건물과 여러 통로가 보였다.</div><div class="line" data-line="8">하지만 정확한 내부 구조는 어디에도 표시되지 않았다.</div><div class="line" data-line="9">세 사람은 침입 경로를 조용히 다시 계산했다.</div><div class="line" data-line="10">땅굴은 경비 구역 아래를 통과해야 했다.</div><div class="line" data-line="11">조금만 방향이 어긋나도 계획은 실패할 수 있었다.</div><div class="line" data-line="12">최 기자는 사진에서 눈을 떼지 못했다.</div><div class="line" data-line="13">오랫동안 잊었던 기자의 감각이 되살아나는 듯했다.</div><div class="line" data-line="14">그는 결국 고개를 끄덕였다.</div>`,
+        148: `<div class="line" data-line="1">두더지는 작은 기계의 스위치를 하나씩 점검했다.</div><div class="line" data-line="2">기계는 소음을 줄이기 위해 여러 번 개조된 것이었다.</div><div class="line" data-line="3">공치는 정부가 공개한 자료가 너무 적다고 불평했다.</div><div class="line" data-line="4">최 기자는 공개되지 않았다는 사실 자체가 단서라고 말했다.</div><div class="line" data-line="5">세 사람은 위성사진의 그림자를 따라 거리를 재었다.</div><div class="line" data-line="6">가장 가능성이 높은 지점은 중앙 건물 뒤편이었다.</div><div class="line" data-line="7">그곳까지 땅굴을 연결하면 경비를 피할 수 있었다.</div><div class="line" data-line="8">문제는 굴착을 끝낸 뒤 어디로 나오느냐였다.</div><div class="line" data-line="9">두더지는 계산이 맞을 거라며 자신 있게 웃었다.</div><div class="line" data-line="10">그러나 최 기자는 마지막까지 불안함을 떨치지 못했다.</div><div class="line" data-line="11">공치는 외계인을 직접 볼 수 있다는 생각에 들떠 있었다.</div><div class="line" data-line="12">준비가 끝나자 지하실 안이 갑자기 조용해졌다.</div><div class="line" data-line="13">세 사람은 서로의 얼굴을 바라보았다.</div><div class="line" data-line="14">이제 돌아갈 수 없는 순간이었다.</div>`,
+        149: `<div class="line" data-line="1">굴착기는 천천히 땅속으로 움직이기 시작했다.</div><div class="line" data-line="2">진동은 작았지만 벽과 바닥에 낮은 울림이 이어졌다.</div><div class="line" data-line="3">두더지는 계기판을 보며 방향을 조금씩 조정했다.</div><div class="line" data-line="4">최 기자는 진행 거리를 수첩에 기록했다.</div><div class="line" data-line="5">공치는 통로 끝에 무엇이 있을지 계속 상상했다.</div><div class="line" data-line="6">긴 시간이 지난 뒤 기계가 마침내 멈췄다.</div><div class="line" data-line="7">두더지는 천장에 작은 구멍을 뚫어 바깥을 살폈다.</div><div class="line" data-line="8">세 사람은 숨을 죽이고 신호를 기다렸다.</div><div class="line" data-line="9">마침내 올라가도 된다는 손짓이 내려왔다.</div><div class="line book-q2-line" data-line="10" data-page="149" data-quiz-target="q2">최 기자가 가장 먼저 사다리를 타고 올라갔다.</div><div class="line" data-line="11">그러나 예상했던 건물 내부는 보이지 않았다.</div><div class="line" data-line="12">구멍 밖은 차가운 바람이 부는 야외였다.</div><div class="line" data-line="13">계산이 조금 어긋난 것이었다.</div><div class="line" data-line="14">멀리 중앙 건물이 어둠 속에 서 있었다.</div><div class="line" data-line="15">최 기자가 중앙 건물을 바라보고 공치를 불렀다.</div>`,
+        150: `<div class="line" data-line="1">세 사람은 낮은 자세로 건물 벽을 따라 움직였다.</div><div class="line" data-line="2">경비의 인기척은 아직 느껴지지 않았다.</div><div class="line" data-line="3">최 기자는 서두르지 말고 천천히 가자고 말했다.</div><div class="line" data-line="4">공치는 카메라를 가슴에 꼭 붙들었다.</div><div class="line" data-line="5">두더지는 굴착기로 돌아갈 길을 계속 확인했다.</div><div class="line" data-line="6">중앙 건물까지의 거리는 생각보다 멀었다.</div><div class="line" data-line="7">그들은 어둠이 짙은 곳만 골라 이동했다.</div><div class="line" data-line="8">조금씩 목적지에 가까워지고 있었다.</div><div class="line" data-line="9">그때 멀리서 날카로운 목소리가 들렸다.</div><div class="line" data-line="10">누군가 그들을 발견한 것이었다.</div><div class="line" data-line="11">두 명의 경비가 빠르게 다가왔다.</div><div class="line" data-line="12">세 사람은 더 이상 숨을 곳을 찾지 못했다.</div><div class="line" data-line="13">최 기자는 손을 들고 그 자리에 멈췄다.</div><div class="line" data-line="14">계획은 시작도 하기 전에 끝날 것처럼 보였다.</div>`,
+        151: `<div class="line" data-line="1">경비는 총구를 겨눈 채 신분을 밝히라고 명령했다.</div><div class="line" data-line="2">최 기자는 시간을 벌기 위해 천천히 입을 열었다.</div><div class="line" data-line="3">하지만 어떤 변명도 통할 상황은 아니었다.</div><div class="line" data-line="4">공치는 겁에 질린 얼굴로 주변을 살폈다.</div><div class="line" data-line="5">두더지는 고개를 숙인 채 아무 말도 하지 않았다.</div><div class="line" data-line="6">경비가 한 걸음씩 가까이 다가왔다.</div><div class="line" data-line="7">도망치면 바로 붙잡힐 거리였다.</div><div class="line" data-line="8">최 기자는 손끝에 식은땀이 맺히는 것을 느꼈다.</div><div class="line" data-line="9">그 순간 두더지가 거의 들리지 않게 속삭였다.</div><div class="line" data-line="10">자신이 시간을 끌 테니 중앙 건물로 달리라는 말이었다.</div><div class="line" data-line="11">최 기자는 믿을 수 없다는 눈으로 그를 바라보았다.</div><div class="line" data-line="12">두더지는 짧게 웃으며 괜찮다고 말했다.</div><div class="line" data-line="13">공치는 그 말의 뜻을 이해하지 못했다.</div><div class="line" data-line="14">경비는 이제 바로 앞까지 다가와 있었다.</div>`,
+        152: `<div class="line" data-line="1">두더지는 더 이상 숨길 수 없다며 입을 열었다.</div><div class="line" data-line="2">자신도 평범한 인간이 아니라는 고백이었다.</div><div class="line" data-line="3">최 기자와 공치는 동시에 그를 바라보았다.</div><div class="line" data-line="4">두더지는 자신이 인조인간이라고 조용히 말했다.</div><div class="line" data-line="5">그래서 위험한 일을 맡을 수 있다고 덧붙였다.</div><div class="line" data-line="6">최 기자는 그런 희생을 받아들일 수 없다고 했다.</div><div class="line" data-line="7">그러나 두더지는 이미 마음을 정한 얼굴이었다.</div><div class="line" data-line="8">중앙 건물에 먼저 들어가 증거를 확보하라고 말했다.</div><div class="line" data-line="9">모든 사람에게 진실을 보여 주는 것이 우선이었다.</div><div class="line" data-line="10">경비의 발소리가 더욱 크게 들렸다.</div><div class="line" data-line="11">시간은 거의 남아 있지 않았다.</div><div class="line" data-line="12">세 사람 사이에 짧고 무거운 침묵이 흘렀다.</div><div class="line" data-line="13">두더지는 손가락을 접으며 신호를 준비했다.</div><div class="line" data-line="14">최 기자는 이를 악물고 달릴 방향을 확인했다.</div>`,
+        153: `<div class="line" data-line="1">경비가 열 걸음 안쪽까지 다가왔다.</div><div class="line" data-line="2">공치는 카메라 끈을 손목에 단단히 감았다.</div><div class="line" data-line="3">최 기자는 중앙 건물의 출입문을 바라보았다.</div><div class="line" data-line="4">두더지는 천천히 몸의 중심을 앞으로 옮겼다.</div><div class="line" data-line="5">모두가 다음 순간을 기다리며 숨을 멈췄다.</div><div class="line" data-line="6">경비의 손이 무전기로 향했다.</div><div class="line clickable-hint" data-line="7" data-page="153">두더지<span class="particle-target">는</span> 숨<span class="particle-target">을</span> 고르고 하나, 둘, 셋<span class="particle-target">을</span> 세었다.</div><div class="line" data-line="8">마지막 숫자가 끝나자 세 사람은 동시에 움직였다.</div><div class="line" data-line="9">최 기자와 공치는 중앙 건물을 향해 달렸다.</div><div class="line" data-line="10">두더지는 반대편으로 뛰어 경비의 시선을 끌었다.</div><div class="line" data-line="11">고함 소리와 발소리가 뒤엉켰다.</div><div class="line" data-line="12">어둠 속에서 손전등 불빛이 크게 흔들렸다.</div><div class="line" data-line="13">최 기자는 뒤를 돌아보지 않았다.</div><div class="line" data-line="14">오직 출입문만 바라보며 계속 달렸다.</div>`,
+        154: `<div class="line" data-line="1">두더지는 경비들 앞을 가로질러 빠르게 방향을 바꿨다.</div><div class="line" data-line="2">경비의 시선이 그에게 쏠렸다.</div><div class="line" data-line="3">공치는 숨이 차올랐지만 걸음을 늦추지 않았다.</div><div class="line" data-line="4">최 기자는 먼저 출입문에 도착해 손잡이를 잡았다.</div><div class="line" data-line="5">문은 잠겨 있지 않았다.</div><div class="line" data-line="6">두 사람은 곧바로 건물 안으로 몸을 밀어 넣었다.</div><div class="line" data-line="7">바깥에서는 두더지를 부르는 목소리가 들렸다.</div><div class="line" data-line="8">최 기자는 잠시 멈춰 뒤를 돌아보려 했다.</div><div class="line" data-line="9">공치는 지금 멈추면 모든 일이 헛된다고 외쳤다.</div><div class="line" data-line="10">그 말에 최 기자는 다시 앞을 향했다.</div><div class="line" data-line="11">복도 안쪽은 예상보다 밝고 조용했다.</div><div class="line" data-line="12">벽에는 출입이 금지된 구역 표시가 이어졌다.</div><div class="line" data-line="13">두 사람은 가장 깊은 곳으로 향했다.</div><div class="line" data-line="14">외계인의 흔적이 그곳에 있을 것 같았다.</div>`,
+        155: `<div class="line" data-line="1">복도를 돌자 무장한 경비 한 명이 갑자기 나타났다.</div><div class="line" data-line="2">공치는 놀라 그 자리에 멈춰 섰다.</div><div class="line" data-line="3">최 기자는 경비에게 인조인간인지 물었다.</div><div class="line" data-line="4">경비의 표정이 순간 흔들렸다.</div><div class="line" data-line="5">최 기자는 질문을 멈추지 않았다.</div><div class="line" data-line="6">자신이 누구인지 정말 알고 있느냐고 다그쳤다.</div><div class="line" data-line="7">경비는 화를 내며 총을 치켜들었다.</div><div class="line" data-line="8">그러나 손끝은 미세하게 떨리고 있었다.</div><div class="line" data-line="9">최 기자는 그 틈을 놓치지 않았다.</div><div class="line" data-line="10">두 사람은 경비 옆을 빠르게 지나쳤다.</div><div class="line" data-line="11">뒤에서 큰 소리가 들렸지만 멈추지 않았다.</div><div class="line" data-line="12">복도 끝에는 붉은 경고등이 켜진 문이 있었다.</div><div class="line" data-line="13">그 문 너머에 비밀이 숨겨져 있었다.</div><div class="line" data-line="14">최 기자는 손잡이에 힘을 주었다.</div>`,
+        156: `<div class="line" data-line="1">멀리서 경보음이 울리기 시작했다.</div><div class="line" data-line="2">최 기자와 공치는 마지막 문 앞에 섰다.</div><div class="line" data-line="3">두더지가 벌어 준 시간은 길지 않을 것이었다.</div><div class="line" data-line="4">최 기자는 카메라가 제대로 작동하는지 확인했다.</div><div class="line" data-line="5">공치는 문 너머에서 희미한 기계음을 들었다.</div><div class="line" data-line="6">두 사람은 서로에게 짧게 고개를 끄덕였다.</div><div class="line" data-line="7">지금부터 보게 될 것은 반드시 기록해야 했다.</div><div class="line" data-line="8">그들이 찾던 비밀이 바로 눈앞에 있었다.</div><div class="line" data-line="9">최 기자는 기자로서의 두려움을 잠시 내려놓았다.</div><div class="line" data-line="10">그리고 천천히 경고 표시가 붙은 문을 열었다.</div><div class="line" data-line="11">차가운 공기와 낯선 빛이 복도로 흘러나왔다.</div><div class="line" data-line="12">두 사람의 얼굴이 동시에 굳어졌다.</div><div class="line" data-line="13">그곳에는 예상하지 못한 광경이 기다리고 있었다.</div><div class="line" data-line="14">이야기는 가장 위험한 순간으로 이어졌다.</div>`,
+      };
+
+      const embeddedBookSpreads = [
+        [147, 148],
+        [149, 150],
+        [151, 152],
+        [153, 154],
+        [155, 156],
+      ];
+      let embeddedBookSpreadIndex = 0;
+      let embeddedBookLocked = false;
+
+      function getEmbeddedBookElement(id) {
+        const element = document.getElementById(id);
+        if (!element) throw new Error(`책 화면 요소를 찾을 수 없습니다: ${id}`);
+        return element;
+      }
+
+      function renderEmbeddedBookSpread() {
+        const [leftPage, rightPage] =
+          embeddedBookSpreads[embeddedBookSpreadIndex];
+        const leftText = getEmbeddedBookElement("embeddedBookLeftText");
+        const rightText = getEmbeddedBookElement("embeddedBookRightText");
+        leftText.innerHTML = embeddedBookPageData[leftPage];
+        rightText.innerHTML = embeddedBookPageData[rightPage];
+        leftText.dataset.page = String(leftPage);
+        rightText.dataset.page = String(rightPage);
+        getEmbeddedBookElement("embeddedBookLeftNumber").textContent =
+          String(leftPage);
+        getEmbeddedBookElement("embeddedBookRightNumber").textContent =
+          String(rightPage);
+
+        const previousButton = getEmbeddedBookElement("embeddedBookPrev");
+        const nextButton = getEmbeddedBookElement("embeddedBookNext");
+        previousButton.disabled = embeddedBookSpreadIndex === 0;
+        nextButton.disabled =
+          embeddedBookSpreadIndex === embeddedBookSpreads.length - 1;
+
+        if (game.flags.bookClueRevealed) {
+          const clueLine = document.querySelector(
+            '#embeddedBook .line.clickable-hint[data-page="153"][data-line="7"]',
+          );
+          if (clueLine) clueLine.classList.add("revealed");
+        }
+
+        decorateBookQuizTargetLine();
+        bindBookQuizTargetLine();
+        updateBookQuizUI();
+      }
+
+      function turnEmbeddedBook(direction) {
+        if (embeddedBookLocked) return;
+
+        const targetIndex = embeddedBookSpreadIndex + direction;
+        if (targetIndex < 0 || targetIndex >= embeddedBookSpreads.length)
+          return;
+
+        embeddedBookLocked = true;
+        const bookElement = getEmbeddedBookElement("embeddedBook");
+        bookElement.classList.add(direction > 0 ? "turn-next" : "turn-prev");
+
+        window.setTimeout(() => {
+          embeddedBookSpreadIndex = targetIndex;
+          renderEmbeddedBookSpread();
+          bookElement.classList.remove("turn-next", "turn-prev");
+
+          document
+            .querySelectorAll("#embeddedBook .embedded-book-page")
+            .forEach((page, index) => {
+              page.animate(
+                direction > 0
+                  ? [
+                      {
+                        opacity: 0,
+                        transform: `translateX(${index ? 20 : -20}px)`,
+                      },
+                      { opacity: 1, transform: "translateX(0)" },
+                    ]
+                  : [
+                      {
+                        opacity: 0,
+                        transform: `translateX(${index ? -20 : 20}px)`,
+                      },
+                      { opacity: 1, transform: "translateX(0)" },
+                    ],
+                { duration: 260, easing: "ease-out" },
+              );
+            });
+
+          window.setTimeout(() => {
+            embeddedBookLocked = false;
+          }, 280);
+        }, 230);
+      }
+
+      function handleBookQuizTargetLine(targetLine) {
+        if (
+          !targetLine ||
+          !game.flags.bookQuizQuestion1Solved ||
+          game.flags.bookQuizSolved
+        ) {
+          return;
+        }
+
+        game.flags.bookQuizTargetLineFound = true;
+        targetLine.classList.add("book-q2-target", "book-q2-found");
+        document.getElementById("bookQuizFeedback2").textContent = "";
+        updateBookQuizUI();
+      }
+
+      function bindBookQuizTargetLine() {
+        const targetLine = document.querySelector(
+          '#embeddedBook .book-q2-line[data-page="149"][data-quiz-target="q2"]',
+        );
+        if (!targetLine || targetLine.dataset.clickBound === "true") return;
+
+        targetLine.dataset.clickBound = "true";
+        targetLine.setAttribute("role", "button");
+        targetLine.setAttribute("tabindex", "0");
+        targetLine.setAttribute(
+          "aria-label",
+          "149쪽 13번째 줄: 최 기자가 가장 먼저 사다리를 타고 올라갔다.",
+        );
+
+        targetLine.addEventListener("click", (event) => {
+          event.stopPropagation();
+          handleBookQuizTargetLine(targetLine);
+        });
+
+        targetLine.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          handleBookQuizTargetLine(targetLine);
+        });
+      }
+
+      function decorateBookQuizTargetLine() {
+        const targetLine = document.querySelector(
+          '#embeddedBook .book-q2-line[data-page="149"][data-quiz-target="q2"]',
+        );
+        if (!targetLine) return;
+
+        const isTargetActive =
+          game.flags.bookQuizQuestion1Solved && !game.flags.bookQuizSolved;
+        targetLine.classList.toggle("book-q2-target", isTargetActive);
+        targetLine.classList.toggle(
+          "book-q2-found",
+          game.flags.bookQuizTargetLineFound,
+        );
+      }
+
+      function openBookQuiz() {
+        if (game.flags.bookQuizSolved) return;
+        game.flags.bookQuizOpened = true;
+        clearBookQuizFeedback();
+        updateBookQuizUI();
+
+        if (game.flags.bookClueRevealed && !game.flags.bookQuizQuestion1Solved) {
+          window.setTimeout(() => {
+            document.getElementById("bookQuizAnswer1")?.focus();
+          }, 80);
+        }
+      }
+
+      function updateBookQuizUI() {
+        const panel = document.getElementById("bookQuizPanel");
+        const bookScene = document.getElementById("bookScene");
+        const openButton = document.getElementById("bookQuizOpenBtn");
+        if (!panel || !bookScene || !openButton) return;
+
+        const isBookScene = game.currentScene === "bookScene";
+        const shouldShow =
+          isBookScene &&
+          game.flags.bookQuizOpened &&
+          !game.flags.bookQuizSolved;
+
+        panel.classList.toggle("visible", shouldShow);
+        bookScene.classList.toggle("book-quiz-active", shouldShow);
+        openButton.hidden = game.flags.bookQuizOpened || game.flags.bookQuizSolved;
+
+        if (shouldShow) {
+          setBookQuizStep(game.flags.bookQuizQuestion1Solved ? 2 : 1);
+        }
+
+        const guide1 = document.getElementById("bookQuizGuide1");
+        const answerArea1 = document.getElementById("bookQuizAnswer1Area");
+        if (guide1) guide1.hidden = game.flags.bookClueRevealed;
+        if (answerArea1) answerArea1.hidden = !game.flags.bookClueRevealed;
+
+        const foundSentence = document.getElementById("bookQuizFoundSentence");
+        const choices = document.getElementById("bookQuizChoices");
+        if (foundSentence) foundSentence.hidden = !game.flags.bookQuizTargetLineFound;
+        if (choices) choices.hidden = !game.flags.bookQuizTargetLineFound;
+
+        decorateBookQuizTargetLine();
+        requestAnimationFrame(fitEmbeddedBook);
+      }
+
+      function setBookQuizStep(step) {
+        const q1 = document.getElementById("bookQuizQ1");
+        const q2 = document.getElementById("bookQuizQ2");
+        const done = document.getElementById("bookQuizDone");
+        q1.hidden = step !== 1;
+        q2.hidden = step !== 2;
+        done.hidden = step !== 3;
+      }
+
+      function clearBookQuizFeedback() {
+        document.getElementById("bookQuizFeedback1").textContent = "";
+        document.getElementById("bookQuizFeedback2").textContent = "";
+      }
+
+      function checkBookQuizAnswer1() {
+        const input = document.getElementById("bookQuizAnswer1");
+        const feedback = document.getElementById("bookQuizFeedback1");
+        if (!game.flags.bookClueRevealed) {
+          feedback.textContent = "먼저 153쪽 7번째 줄의 문장을 직접 눌러 확인하자.";
+          return;
+        }
+        const answer = input.value.replace(/\s/g, "");
+        if (answer !== "조사") {
+          feedback.textContent = "정답이 아니다. 형광펜으로 표시된 말의 품사를 다시 생각해 보자.";
+          input.focus();
+          return;
+        }
+
+        game.flags.bookQuizQuestion1Solved = true;
+        feedback.textContent = "";
+        setBookQuizStep(2);
+        updateBookQuizUI();
+      }
+
+      function checkBookQuizAnswer2(choice) {
+        const feedback = document.getElementById("bookQuizFeedback2");
+        if (!game.flags.bookQuizTargetLineFound) {
+          feedback.textContent = "먼저 149쪽 13번째 줄의 문장을 직접 눌러 확인하자.";
+          return;
+        }
+        if (choice !== 1) {
+          feedback.textContent = "정답이 아니다. 주어 뒤에 붙은 조사를 다시 살펴보자.";
+          return;
+        }
+
+        game.flags.bookQuizSolved = true;
+        feedback.textContent = "";
+        addHint("두 문제를 모두 해결했다. 153쪽 7번째 줄에서 사용된 조사의 개수를 기억하자.");
+        setBookQuizStep(3);
+
+        const panel = document.getElementById("bookQuizPanel");
+        if (panel) panel.classList.add("visible");
+        window.setTimeout(() => {
+          updateBookQuizUI();
+          showDialog("두 문제를 모두 해결했다. 조사에 관한 단서를 기록했다.");
+        }, 900);
+      }
+
+      function fitEmbeddedBook() {
+        const viewport = getEmbeddedBookElement("embeddedBookViewport");
+        const bookElement = getEmbeddedBookElement("embeddedBook");
+        const width = viewport.clientWidth;
+        const height = viewport.clientHeight;
+        if (!width || !height) return;
+
+        const scale = Math.min(width / 1448, height / 1086);
+        const x = (width - 1448 * scale) / 2;
+        const y = (height - 1086 * scale) / 2;
+        bookElement.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+      }
+
+      getEmbeddedBookElement("embeddedBookPrev").addEventListener("click", () =>
+        turnEmbeddedBook(-1),
+      );
+      getEmbeddedBookElement("embeddedBookNext").addEventListener("click", () =>
+        turnEmbeddedBook(1),
+      );
+
+      window.addEventListener("keydown", (event) => {
+        if (game.currentScene !== "bookScene") return;
+        if (event.key === "ArrowLeft") turnEmbeddedBook(-1);
+        if (event.key === "ArrowRight") turnEmbeddedBook(1);
+      });
+
+      let embeddedBookTouchStartX = null;
+      getEmbeddedBookElement("embeddedBookViewport").addEventListener(
+        "touchstart",
+        (event) => {
+          embeddedBookTouchStartX = event.changedTouches[0].clientX;
+        },
+        { passive: true },
+      );
+
+      getEmbeddedBookElement("embeddedBookViewport").addEventListener(
+        "touchend",
+        (event) => {
+          if (embeddedBookTouchStartX === null) return;
+          const difference =
+            event.changedTouches[0].clientX - embeddedBookTouchStartX;
+          if (Math.abs(difference) > 55)
+            turnEmbeddedBook(difference < 0 ? 1 : -1);
+          embeddedBookTouchStartX = null;
+        },
+        { passive: true },
+      );
+
+      getEmbeddedBookElement("embeddedBook").addEventListener(
+        "click",
+        (event) => {
+          if (!(event.target instanceof Element)) return;
+
+          const clueLine = event.target.closest(
+            '.line.clickable-hint[data-page="153"][data-line="7"]',
+          );
+          if (clueLine) {
+            if (!game.flags.bookQuizOpened) {
+              showDialog("먼저 문제 보기 버튼을 눌러 문제를 확인하자.");
+              return;
+            }
+            if (game.flags.bookQuizSolved) return;
+
+            clueLine.classList.add("revealed");
+            game.flags.bookClueRevealed = true;
+
+            // 문제를 확인한 뒤 153쪽 7번째 줄을 찾으면 메모지 조각을 소모한다.
+            if (game.inventory.bookMemo) {
+              game.inventory.bookMemo = false;
+              renderInventory();
+            }
+
+            clearBookQuizFeedback();
+            updateBookQuizUI();
+            if (!game.flags.bookQuizQuestion1Solved) {
+              const input = document.getElementById("bookQuizAnswer1");
+              window.setTimeout(() => input?.focus(), 80);
+            }
+            return;
+          }
+
+          const q2TargetLine = event.target.closest(
+            '.book-q2-line[data-page="149"][data-quiz-target="q2"]',
+          );
+          if (q2TargetLine) handleBookQuizTargetLine(q2TargetLine);
+        },
+      );
+
+      document.querySelectorAll(".dial-wheel-control").forEach((wheel) => {
+        const index = Number(wheel.dataset.index);
+        wheel.querySelector(".dial-arrow.up").addEventListener("click", () => rotateDoorDial(index, 1));
+        wheel.querySelector(".dial-arrow.down").addEventListener("click", () => rotateDoorDial(index, -1));
+        let pointerStartY = null;
+        wheel.addEventListener("pointerdown", (event) => {
+          if (event.target.closest("button")) return;
+          pointerStartY = event.clientY;
+          wheel.setPointerCapture?.(event.pointerId);
+        });
+        wheel.addEventListener("pointerup", (event) => {
+          if (pointerStartY === null || event.target.closest("button")) return;
+          const movement = event.clientY - pointerStartY;
+          rotateDoorDial(index, Math.abs(movement) < 12 ? 1 : movement < 0 ? 1 : -1);
+          pointerStartY = null;
+        });
+        wheel.addEventListener("wheel", (event) => {
+          event.preventDefault();
+          rotateDoorDial(index, event.deltaY < 0 ? 1 : -1);
+        }, { passive: false });
+      });
+
+      window.addEventListener("resize", fitEmbeddedBook);
+      renderEmbeddedBookSpread();
+      fitEmbeddedBook();
+    </script>
+  </body>
+</html>
