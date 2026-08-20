@@ -47,6 +47,20 @@
         overflow: hidden;
         background: #000;
       }
+      .creator-watermark {
+        position: absolute;
+        top: 2.2%;
+        right: 2.2%;
+        z-index: 10000;
+        color: rgba(255, 255, 255, 0.34);
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(13px, 1.45vw, 22px);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65);
+        pointer-events: none;
+        user-select: none;
+      }
       .scene {
         position: absolute;
         inset: 0;
@@ -1473,6 +1487,7 @@
   <body>
     <div class="game">
       <main class="stage" id="stage">
+        <div class="creator-watermark" aria-label="제작자 jjin's class">jjin's class</div>
         <section id="roomScene" class="scene active">
           <img src="room.png" class="scene-img" alt="어두운 방" /><button
             type="button"
